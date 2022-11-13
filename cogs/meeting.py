@@ -11,10 +11,10 @@ import datetime
 class Meet(Cog_Extension):
     @commands.Cog.listener()
     async def on_ready(self):
-        print('meet cog loaded.')
+        print('meeting cog loaded.')
 
     @app_commands.command(name='set_meeting', description="set the meeting voice channel and when to begin")
-    async def set_meeting(self, interaction: discord.Interaction, title: str, channel: discord.VoiceChannel,  hour: int, minute: int, second: int, day: int = None, month: int = None, year: int = None):
+    async def set_meeting(self, interaction: discord.Interaction, title: str, voice_channel: discord.VoiceChannel,  hour: int, minute: int, day: int = None, month: int = None, year: int = None):
         if day == None:
             day = datetime.datetime.today().day
         if month == None:
@@ -22,31 +22,33 @@ class Meet(Cog_Extension):
         if year == None:
             year = datetime.datetime.today().year
         microsecond = 0
-        time = datetime.datetime(year, month, day, hour, minute, second, microsecond)
         guild_ID = interaction.guild.id
-        voice_channel_ID = channel.id
+        voice_channel_ID = voice_channel.id
 
         data = {
+            "expired": False,
             "guild_ID": guild_ID,
             "title": title,
             "voice_channel_ID": voice_channel_ID,
-            "time": [year, month, day, hour, minute, microsecond],
-            "expired": False
+            "time": [year, month, day, hour, minute]  
         }
 
-        with open('meeting_time.json', mode='r', encoding='utf8') as jfile:
+        with open('meeting_info_count.json', mode='r', encoding='utf8') as jfile:
             jdata = json.load(jfile)
         count = jdata["count"]
+
+        with open('meeting_info.json', mode='r', encoding='utf8') as jfile:
+            jdata = json.load(jfile)
         jdata[count] = data
 
-        with open('meeting_time.json', mode='w', encoding='utf8') as jfile:
+        with open('meeting_info.json', mode='w', encoding='utf8') as jfile:
             json.dump(jdata, jfile, indent=4)
         
-        with open('meeting_time.json', mode='r', encoding='utf8') as jfile:
+        with open('meeting_info_count.json', mode='r', encoding='utf8') as jfile:
             jdata = json.load(jfile)
         jdata["count"] = count+1
 
-        with open('meeting_time.json', mode='w', encoding='utf8') as jfile:
+        with open('meeting_info_count.json', mode='w', encoding='utf8') as jfile:
             json.dump(jdata, jfile, indent=4)
 
         await interaction.response.send_message('set meeting successfully.')
@@ -59,7 +61,7 @@ class Meet(Cog_Extension):
         with open('meet_notify_channel.json', mode='w', encoding='utf8') as jfile:
             json.dump(jdata, jfile, indent=4)
         channel = self.bot.get_channel(channel.id)
-        await interaction.response.send_message(f'meeting notify channel set to {channel.mention}.', ephemeral=False)
+        await interaction.response.send_message(f'set meeting notify channel to {channel.mention} successfully.', ephemeral=False)
 
 
 async def setup(bot):

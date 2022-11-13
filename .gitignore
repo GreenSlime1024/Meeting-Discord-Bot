@@ -1,6 +1,7 @@
 not_token.json
 meeting_notify_channel.json
-meeting_time.json
+meeting_info.json
+meeting_info_count.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
