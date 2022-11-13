@@ -18,45 +18,58 @@ class MeetingTask(Cog_Extension):
         async def MeetingTask():
             await self.bot.wait_until_ready()
             while not self.bot.is_closed():
-            
+                
                 with open('meeting_info.json', mode='r', encoding='utf8') as jfile:
                     jdata = json.load(jfile)
 
                 for i in jdata.keys():
+                    
                     with open('meeting_info.json', mode='r', encoding='utf8') as jfile:
                         jdata = json.load(jfile)
                     now_time = datetime.datetime.now()
+                    print(1)
                     
-                    if jdata[i]["expired"] == True:
-                        return
-                    if jdata[i]["time"][0] != now_time.year:
-                        return
-                    if jdata[i]["time"][1] != now_time.month:
-                        return
-                    if jdata[i]["time"][2] != now_time.day:
-                        return
-                    if jdata[i]["time"][3] != now_time.hour:
-                        return
-                    if jdata[i]["time"][4] != now_time.minute:
-                        return
-                    
-                    title = jdata[i]["title"]
-                    voice_channel_ID = jdata[i]["voice_channel_ID"]
-                    voice_channel = self.bot.get_channel(voice_channel_ID)
-                    
-                    
+                    if jdata[i]["expired"] == False:
+                        print(2)
+                        year = jdata[i]["time"][0]
+                        month = jdata[i]["time"][1]
+                        day = jdata[i]["time"][2]
+                        hour = jdata[i]["time"][3]
+                        minute = jdata[i]["time"][4]
 
-                    embed=discord.Embed(title=title, description=voice_channel.mention)
-                    embed.add_field(name="key", value="value", inline=False)
 
-                    guild = jdata[i]["guild_ID"]
-                    with open('meeting_notify.json', mode='r', encoding='utf8') as jfile:
-                        jdata = json.load(jfile)
-                    notify_channel_ID = jdata[guild]
-                    notify_channel = self.bot.get_channel(notify_channel_ID)
+                        time =  f'{year}/{month}/{day} {hour}:{minute}'
+                        now_time_format = now_time.strftime('%Y/%m/%d %H:%M')
+                        print(now_time_format)
+                        print(time)
+                        
+                        if time == now_time_format:
+                            print(3)
+                            title = jdata[i]["title"]
+                            voice_channel_ID = jdata[i]["voice_channel_ID"]
+                            voice_channel = self.bot.get_channel(voice_channel_ID)
+                            
+                            
 
-                    await notify_channel.send(embed=embed)
-            await asyncio.sleep(1)
+                            embed=discord.Embed(title=title, description=voice_channel.mention)
+                            embed.add_field(name="key", value="value", inline=False)
+
+                            guild = str(jdata[i]["guild_ID"])
+                            print(guild)
+                            with open('meeting_notify_channel.json', mode='r', encoding='utf8') as jfile:
+                                jdata = json.load(jfile)
+                            notify_channel_ID = jdata[guild]
+                            notify_channel = self.bot.get_channel(notify_channel_ID)
+                            print(4)
+                            await notify_channel.send(embed=embed)
+                            print(5)
+                            with open('meeting_info.json', mode='r', encoding='utf8') as jfile:
+                                jdata = json.load(jfile)
+                            jdata[i]["expired"] = True
+                            with open('meeting_info.json', mode='w', encoding='utf8') as jfile:
+                                json.dump(jdata, jfile, indent=4)
+                    
+                await asyncio.sleep(15)
                         
 
         self.bg_task = self.bot.loop.create_task(MeetingTask())
