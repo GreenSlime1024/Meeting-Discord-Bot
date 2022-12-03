@@ -60,9 +60,9 @@ class Meet(Cog_Extension):
         embed=discord.Embed(title=title, description=voice_channel.mention, color=0x66ff47)
         embed.add_field(name="meeting time", value=f"<t:{timestamp}:F>", inline=False)
         if role_ID == None:
-            embed.add_field(name="role", value="@everyone", inline=True)
+            embed.add_field(name="role", value="@everyone", inline=False)
         else:
-            embed.add_field(name="role", value=role.mention, inline=True)
+            embed.add_field(name="role", value=role.mention, inline=False)
 
         await interaction.response.send_message(embed=embed)
 

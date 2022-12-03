@@ -45,22 +45,27 @@ class MeetingTask(Cog_Extension):
                         voice_channel_ID = jdata[i]["voice_channel_ID"]
                         voice_channel = self.bot.get_channel(voice_channel_ID)
                         role_ID = jdata[i]["role_ID"]
-                        guild_ID = str(jdata[i]["guild_ID"])
+                        guild_ID = int(jdata[i]["guild_ID"])
                         guild = self.bot.get_guild(guild_ID)
                         
                         if role_ID == None:
                             role = None
                         else:
-                            role = get(guild.roles, id=role_ID)
+                            role = guild.get_role(role_ID)
                         
                         embed=discord.Embed(title=title, description=voice_channel.mention)
                         if role == None:
-                            embed.add_field(name="role", value="@everyone", inline=True)
+                            embed.add_field(name="role", value="@everyone", inline=False)
                         else:
-                            embed.add_field(name="role", value=role.mention, inline=True)
+                            embed.add_field(name="role", value=role.mention, inline=False)
+                            absent_members = []
+                            for member in role.members:
+                                if member not in voice_channel.members:
+                                    absent_members.append(member.mention)
+                            embed.add_field(name="absent members", value=absent_members, inline=False)
+
 
                         guild = str(jdata[i]["guild_ID"])
-                        print(guild)
                         with open("meeting_notify_channel.json", mode="r", encoding="utf8") as jfile:
                             jdata = json.load(jfile)
                         notify_channel_ID = jdata[guild]
