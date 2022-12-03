@@ -28,7 +28,6 @@ class Meet(Cog_Extension):
             role_ID = role.id
 
         data = {
-            "expired": False,
             "guild_ID": guild_ID,
             "title": title,
             "voice_channel_ID": voice_channel_ID,
