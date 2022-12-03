@@ -23,7 +23,7 @@ class Meet(Cog_Extension):
         guild_ID = interaction.guild.id
         voice_channel_ID = voice_channel.id
         if role == None:
-            role_ID = "@everyone"
+            role_ID = None
         else: 
             role_ID = role.id
 
@@ -32,8 +32,9 @@ class Meet(Cog_Extension):
             "guild_ID": guild_ID,
             "title": title,
             "voice_channel_ID": voice_channel_ID,
-            "time": [year, month, day, hour, minute],
-            "role_ID": role_ID
+            "role_ID": role_ID,
+            "time": [year, month, day, hour, minute]
+            
         }
 
         with open("meeting_info_count.json", mode="r", encoding="utf8") as jfile:
@@ -59,7 +60,7 @@ class Meet(Cog_Extension):
 
         embed=discord.Embed(title=title, description=voice_channel.mention, color=0x66ff47)
         embed.add_field(name="meeting time", value=f"<t:{timestamp}:F>", inline=False)
-        if role_ID == "@everyone":
+        if role_ID == None:
             embed.add_field(name="role", value="@everyone", inline=True)
         else:
             embed.add_field(name="role", value=role.mention, inline=True)

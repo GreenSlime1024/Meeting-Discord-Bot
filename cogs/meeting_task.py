@@ -4,6 +4,7 @@ from core.classes import Cog_Extension
 import datetime
 import json
 import asyncio
+from discord.utils import get
 
 
 class MeetingTask(Cog_Extension):
@@ -27,10 +28,8 @@ class MeetingTask(Cog_Extension):
                     with open("meeting_info.json", mode="r", encoding="utf8") as jfile:
                         jdata = json.load(jfile)
                     now_time = datetime.datetime.now().replace(second=0,microsecond=0)
-                    print(1)
                     
                     if jdata[i]["expired"] == False:
-                        print(2)
                         year = jdata[i]["time"][0]
                         month = jdata[i]["time"][1]
                         day = jdata[i]["time"][2]
@@ -42,15 +41,23 @@ class MeetingTask(Cog_Extension):
                         print(time)
                         
                         if time == now_time:
-                            print(3)
                             title = jdata[i]["title"]
                             voice_channel_ID = jdata[i]["voice_channel_ID"]
                             voice_channel = self.bot.get_channel(voice_channel_ID)
+                            role_ID = jdata[i]["role_ID"]
+                            guild_ID = str(jdata[i]["guild_ID"])
+                            guild = self.bot.get_guild(guild_ID)
                             
+                            if role_ID == None:
+                                role = None
+                            else:
+                                role = get(guild.roles, id=role_ID)
                             
-
                             embed=discord.Embed(title=title, description=voice_channel.mention)
-                            embed.add_field(name="key", value="value", inline=False)
+                            if role == None:
+                                embed.add_field(name="role", value="@everyone", inline=True)
+                            else:
+                                embed.add_field(name="role", value=role.mention, inline=True)
 
                             guild = str(jdata[i]["guild_ID"])
                             print(guild)
@@ -58,9 +65,7 @@ class MeetingTask(Cog_Extension):
                                 jdata = json.load(jfile)
                             notify_channel_ID = jdata[guild]
                             notify_channel = self.bot.get_channel(notify_channel_ID)
-                            print(4)
                             await notify_channel.send(embed=embed)
-                            print(5)
                             with open("meeting_info.json", mode="r", encoding="utf8") as jfile:
                                 jdata = json.load(jfile)
                             jdata[i]["expired"] = True
