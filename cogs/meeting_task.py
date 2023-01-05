@@ -4,7 +4,6 @@ from core.classes import Cog_Extension
 import datetime
 import json
 import asyncio
-from discord.utils import get
 
 
 class MeetingTask(Cog_Extension):
@@ -45,7 +44,7 @@ class MeetingTask(Cog_Extension):
                         voice_channel_ID = jdata[i]["voice_channel_ID"]
                         voice_channel = self.bot.get_channel(voice_channel_ID)
                         role_ID = jdata[i]["role_ID"]
-                        guild_ID = int(jdata[i]["guild_ID"])
+                        guild_ID = jdata[i]["guild_ID"]
                         guild = self.bot.get_guild(guild_ID)
                         
                         if role_ID == None:
@@ -53,15 +52,21 @@ class MeetingTask(Cog_Extension):
                         else:
                             role = guild.get_role(role_ID)
                         
-                        embed=discord.Embed(title=title, description=voice_channel.mention)
+                        embed=discord.Embed(title=title, description=voice_channel.mention, color=0x474eff)
                         if role == None:
                             embed.add_field(name="role", value="@everyone", inline=False)
+                            absent_members = []
+                            for member in guild.members:
+                                if member not in voice_channel.members:
+                                    absent_members.append(member.mention)
+                                    print(member.mention)
                         else:
                             embed.add_field(name="role", value=role.mention, inline=False)
                             absent_members = []
                             for member in role.members:
                                 if member not in voice_channel.members:
                                     absent_members.append(member.mention)
+                                    print(member.mention)
                             embed.add_field(name="absent members", value=absent_members, inline=False)
 
 

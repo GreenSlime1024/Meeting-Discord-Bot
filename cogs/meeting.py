@@ -57,8 +57,9 @@ class Meet(Cog_Extension):
         time = datetime.datetime(year,month,day,hour,minute)
         timestamp = int(time.timestamp())
 
-        embed=discord.Embed(title=title, description=voice_channel.mention, color=0x66ff47)
-        embed.add_field(name="meeting time", value=f"<t:{timestamp}:F>", inline=False)
+        embed=discord.Embed(title=title, color=0x66ff47)
+        embed.add_field(name="voice channel", value=f"{voice_channel.mention}", inline=False)
+        embed.add_field(name="meeting time", value=f"<t:{timestamp}:F> <t:{timestamp}:R>", inline=False)
         if role_ID == None:
             embed.add_field(name="role", value="@everyone", inline=False)
         else:
