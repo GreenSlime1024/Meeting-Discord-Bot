@@ -15,7 +15,7 @@ class Activity(Cog_Extension):
         async def activiy_task():
             await self.bot.wait_until_ready()
             while not self.bot.is_closed():
-                activity = ["運作平台: NB", "Made By GreenSlime1024"]
+                activity = ["運作平台: Eri24816 租的 server", "Made By GreenSlime1024", "還沒做好"]
                 for i in range(len(activity)-1):
                     await self.bot.change_presence(activity=discord.Game(name=activity[i]))
                     await asyncio.sleep(15)

@@ -27,6 +27,7 @@ class MeetingTask(Cog_Extension):
                     with open("meeting_info.json", mode="r", encoding="utf8") as jfile:
                         jdata = json.load(jfile)
                     now_time = datetime.datetime.now().replace(second=0,microsecond=0)
+                    print(f"now time: {now_time}")
                     
                     
                     year = jdata[i]["time"][0]
@@ -37,7 +38,7 @@ class MeetingTask(Cog_Extension):
 
 
                     time = datetime.datetime(year, month, day, hour, minute)
-                    print(time)
+                    print(f"_task_time: {time}")
                     
                     if time == now_time:
                         title = jdata[i]["title"]
