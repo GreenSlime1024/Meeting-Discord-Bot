@@ -59,7 +59,7 @@ class Meet(Cog_Extension):
             jdata = json.load(jfile)
         timezone = jdata[str(interaction.guild.id)]["timezone"]
         time_UTC = pytz.timezone(timezone).localize(time)
-        timestamp = int(time.timestamp())
+        timestamp = int(time_UTC.timestamp())
 
         embed=discord.Embed(title=title, color=0x66ff47)
         embed.add_field(name="voice channel", value=f"{voice_channel.mention}", inline=False)
