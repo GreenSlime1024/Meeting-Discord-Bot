@@ -4,6 +4,7 @@ from core.classes import Cog_Extension
 import datetime
 import json
 import asyncio
+import pytz
 
 
 class MeetingTask(Cog_Extension):
@@ -24,29 +25,37 @@ class MeetingTask(Cog_Extension):
 
                 for i in jdata.keys():
                     
+                    guild_ID = jdata[i]["guild_ID"]
+                    
+
+                    with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
+                        jdata = json.load(jfile)
+                    timezone = jdata[str(guild_ID)]["timezone"]
+                    
                     with open("meeting_info.json", mode="r", encoding="utf8") as jfile:
                         jdata = json.load(jfile)
-                    now_time = datetime.datetime.now().replace(second=0,microsecond=0)
-                    print(f"now time: {now_time}")
-                    
-                    
+
                     year = jdata[i]["time"][0]
                     month = jdata[i]["time"][1]
                     day = jdata[i]["time"][2]
                     hour = jdata[i]["time"][3]
                     minute = jdata[i]["time"][4]
 
-
-                    time = datetime.datetime(year, month, day, hour, minute)
-                    print(f"_task_time: {time}")
+                    now_time = datetime.datetime.now().replace(second=0,microsecond=0)
+                    now_time_UTC = pytz.timezone('UTC').localize(now_time)
+                    meeting_time = pytz.timezone(timezone).localize(datetime.datetime(year, month, day, hour, minute))
+                    meeting_time_UTC = meeting_time.astimezone(pytz.utc)
                     
-                    if time == now_time:
+                    print(f"now time: {now_time_UTC}")
+                    print(f"meeting_time: {meeting_time}")
+                    
+                    if meeting_time_UTC == now_time_UTC:
                         title = jdata[i]["title"]
                         voice_channel_ID = jdata[i]["voice_channel_ID"]
                         voice_channel = self.bot.get_channel(voice_channel_ID)
                         role_ID = jdata[i]["role_ID"]
-                        guild_ID = jdata[i]["guild_ID"]
                         guild = self.bot.get_guild(guild_ID)
+                        
                         
                         if role_ID == None:
                             role = None
@@ -72,11 +81,11 @@ class MeetingTask(Cog_Extension):
 
 
                         guild = str(jdata[i]["guild_ID"])
-                        with open("meeting_notify_channel.json", mode="r", encoding="utf8") as jfile:
+                        with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
                             jdata = json.load(jfile)
-                        notify_channel_ID = jdata[guild]
-                        notify_channel = self.bot.get_channel(notify_channel_ID)
-                        await notify_channel.send(embed=embed)
+                        meeting_notify_channel_ID = jdata[guild]["meeting_notify_channel_id"]
+                        meeting_notify_channel = self.bot.get_channel(meeting_notify_channel_ID)
+                        await meeting_notify_channel.send(embed=embed)
                         with open("meeting_info.json", mode="r", encoding="utf8") as jfile:
                             jdata = json.load(jfile)
                         del jdata[i]

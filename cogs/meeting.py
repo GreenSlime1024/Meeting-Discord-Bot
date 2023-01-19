@@ -5,6 +5,7 @@ from discord import app_commands
 import asyncio
 import json
 import datetime
+import pytz
 
 
 class Meet(Cog_Extension):
@@ -54,6 +55,10 @@ class Meet(Cog_Extension):
             json.dump(jdata, jfile, indent=4)
 
         time = datetime.datetime(year,month,day,hour,minute)
+        with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
+            jdata = json.load(jfile)
+        timezone = jdata[str(interaction.guild.id)]["timezone"]
+        time_UTC = pytz.timezone(timezone).localize(time)
         timestamp = int(time.timestamp())
 
         embed=discord.Embed(title=title, color=0x66ff47)
