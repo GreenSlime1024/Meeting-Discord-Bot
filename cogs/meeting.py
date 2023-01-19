@@ -33,7 +33,6 @@ class Meet(Cog_Extension):
             "voice_channel_ID": voice_channel_ID,
             "role_ID": role_ID,
             "time": [year, month, day, hour, minute]
-            
         }
 
         with open("meeting_info_count.json", mode="r", encoding="utf8") as jfile:
@@ -64,19 +63,20 @@ class Meet(Cog_Extension):
             embed.add_field(name="role", value="@everyone", inline=False)
         else:
             embed.add_field(name="role", value=role.mention, inline=False)
-
         await interaction.response.send_message(embed=embed)
-
-    @app_commands.command(name="set_meeting_notify_channel", description="set meeting notify channe")
-    async def set_meeting_notify_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
-        with open("meeting_notify_channel.json", mode="r", encoding="utf8") as jfile:
+    
+    @app_commands.command(name="server_settings", description="set server settings")
+    async def server_settings(self, interaction: discord.Interaction, meeting_notify_channel: discord.TextChannel, timezone:str):
+        data = {
+            "meeting_notify_channel_id": meeting_notify_channel.id,
+            "timezone": timezone
+        }
+        with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
-        jdata[interaction.guild.id] = channel.id
-        with open("meeting_notify_channel.json", mode="w", encoding="utf8") as jfile:
+        jdata[str(interaction.guild.id)] = data
+        with open("guilds_info.json", mode="w", encoding="utf8") as jfile:
             json.dump(jdata, jfile, indent=4)
-        channel = self.bot.get_channel(channel.id)
-        await interaction.response.send_message(f"set meeting notify channel to {channel.mention} successfully.", ephemeral=False)
-
+        await interaction.response.send_message(f"set successfully.", ephemeral=False)
 
 async def setup(bot):
     await bot.add_cog(Meet(bot))
