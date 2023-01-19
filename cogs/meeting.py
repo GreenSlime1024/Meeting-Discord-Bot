@@ -70,7 +70,7 @@ class Meet(Cog_Extension):
             embed.add_field(name="role", value=role.mention, inline=False)
         await interaction.response.send_message(embed=embed)
     
-    @app_commands.command(name="server_settings", description="set server settings")
+    @app_commands.command(name="server-settings", description="set server settings")
     async def server_settings(self, interaction: discord.Interaction, meeting_notify_channel: discord.TextChannel, timezone:str):
         data = {
             "meeting_notify_channel_id": meeting_notify_channel.id,

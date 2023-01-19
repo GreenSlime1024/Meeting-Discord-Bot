@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from core.classes import Cog_Extension
 from discord import app_commands
+import pytz
 
 
 class Main(Cog_Extension):
@@ -34,6 +35,11 @@ class Main(Cog_Extension):
         for guild in self.bot.guilds:
             embed.add_field(name=guild, value=guild.id, inline=False)
         await interaction.response.send_message(embed=embed)
+
+    @app_commands.command(name="timezone-names", description="show all the timezone names")
+    async def guild(self, interaction: discord.Interaction):
+        timezones = pytz.all_timezones
+        await interaction.response.send_message(timezones)
 
 
 async def setup(bot):
