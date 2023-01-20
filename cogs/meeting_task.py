@@ -71,7 +71,7 @@ class MeetingTask(Cog_Extension):
                                     absent_members.append(member.mention)
                                     print(member.mention)
                             embed.add_field(name="absent members", value=absent_members, inline=False)
-                            
+
                         else:
                             embed.add_field(name="role", value=role.mention, inline=False)
                             absent_members = []
@@ -94,7 +94,7 @@ class MeetingTask(Cog_Extension):
                         with open("meeting_info.json", mode="w", encoding="utf8") as jfile:
                             json.dump(jdata, jfile, indent=4)
                     
-                await asyncio.sleep(5)
+                await asyncio.sleep(1)
                         
 
         self.bg_task = self.bot.loop.create_task(MeetingTask())
