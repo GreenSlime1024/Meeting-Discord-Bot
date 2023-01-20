@@ -70,6 +70,8 @@ class MeetingTask(Cog_Extension):
                                 if member not in voice_channel.members:
                                     absent_members.append(member.mention)
                                     print(member.mention)
+                            embed.add_field(name="absent members", value=absent_members, inline=False)
+                            
                         else:
                             embed.add_field(name="role", value=role.mention, inline=False)
                             absent_members = []
