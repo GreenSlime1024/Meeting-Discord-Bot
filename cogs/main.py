@@ -38,8 +38,9 @@ class Main(Cog_Extension):
 
     @app_commands.command(name="timezone-names", description="show all the timezone names")
     async def guild(self, interaction: discord.Interaction):
-        timezones = pytz.all_timezones
-        await interaction.response.send_message(timezones)
+        await interaction.response.send_message("timezones")
+        message = await interaction.original_response()
+        await message.add_files(discord.File("timezone_names.txt", filename="timezone_names.txt"))
 
 
 async def setup(bot):
