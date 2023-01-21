@@ -61,33 +61,31 @@ class MeetingTask(Cog_Extension):
                             role = None
                         else:
                             role = guild.get_role(role_ID)
+
+                        def absent_member_check(members):
+                            absent_members = []
+                            for member in members:
+                                if member not in voice_channel.members:
+                                    absent_members.append(member.mention)
+                                    print(member.mention)
+                            embed.add_field(name="absent members", value=absent_members, inline=False)
+
                         
                         embed=discord.Embed(title=title, description=voice_channel.mention, color=0x474eff)
                         if role == None:
                             embed.add_field(name="role", value="@everyone", inline=False)
-                            absent_members = []
-                            for member in guild.members:
-                                if member not in voice_channel.members:
-                                    absent_members.append(member.mention)
-                                    print(member.mention)
-                            embed.add_field(name="absent members", value=absent_members, inline=False)
-
+                            absent_member_check(guild.members)
                         else:
                             embed.add_field(name="role", value=role.mention, inline=False)
-                            absent_members = []
-                            for member in role.members:
-                                if member not in voice_channel.members:
-                                    absent_members.append(member.mention)
-                                    print(member.mention)
-                            embed.add_field(name="absent members", value=absent_members, inline=False)
+                            absent_member_check(role.members)
 
 
-                        guild = str(jdata[i]["guild_ID"])
                         with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
                             jdata = json.load(jfile)
-                        meeting_notify_channel_ID = jdata[guild]["meeting_notify_channel_id"]
+                        meeting_notify_channel_ID = jdata[str(guild_ID)]["meeting_notify_channel_id"]
                         meeting_notify_channel = self.bot.get_channel(meeting_notify_channel_ID)
                         await meeting_notify_channel.send(embed=embed)
+                        
                         with open("meeting_info.json", mode="r", encoding="utf8") as jfile:
                             jdata = json.load(jfile)
                         del jdata[i]
