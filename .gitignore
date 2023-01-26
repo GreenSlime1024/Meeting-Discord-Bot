@@ -1,7 +1,7 @@
 not_token.json
-# guilds_info.json
-# meeting_info.json
-# meeting_info_count.json
+guilds_info.json
+meeting_info.json
+meeting_info_count.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
