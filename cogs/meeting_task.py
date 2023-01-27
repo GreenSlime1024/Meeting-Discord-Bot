@@ -63,10 +63,10 @@ class MeetingTask(Cog_Extension):
                             role = guild.get_role(role_ID)
 
                         def absent_member_check(members):
-                            absent_members = []
+                            absent_members = ""
                             for member in members:
                                 if member not in voice_channel.members:
-                                    absent_members.append(member.mention)
+                                    absent_members += member.mention+" "
                                     print(member.mention)
                             embed.add_field(name="absent members", value=absent_members, inline=False)
 
