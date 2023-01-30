@@ -64,6 +64,7 @@ class Meet(Cog_Extension):
         embed=discord.Embed(title=title, color=0x66ff47)
         embed.add_field(name="voice channel", value=f"{voice_channel.mention}", inline=False)
         embed.add_field(name="meeting time", value=f"<t:{timestamp}:F> <t:{timestamp}:R>", inline=False)
+        embed.set_footer(text=count)
         if role_ID == None:
             embed.add_field(name="role", value="@everyone", inline=False)
         else:
