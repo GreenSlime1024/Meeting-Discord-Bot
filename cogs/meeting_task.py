@@ -62,6 +62,7 @@ class MeetingTask(Cog_Extension):
                             role = guild.get_role(role_ID)
                         
                         embed=discord.Embed(title=title, description=voice_channel.mention, color=0x474eff)
+                        embed.set_footer(text=i)
                         absent_members = ""
                         if role == None:
                             embed.add_field(name="role", value="@everyone", inline=False)
@@ -87,15 +88,30 @@ class MeetingTask(Cog_Extension):
                             embed.add_field(name="absent members", value=absent_members, inline=False)
                             await meeting_notify_channel.send(embed=embed)
                         else:
+                            embed.add_field(name="absent members", value="過長無法顯示，請參閱下方的檔案", inline=False)
                             await meeting_notify_channel.send(embed=embed)
-                            # send json file.
+                            with open("absent_members_temp.json", mode="r", encoding="utf8") as jfile:
+                                jdata = json.load(jfile)
+                            jdata[i] = absent_members
+                            with open("absent_members_temp.json", mode="w", encoding="utf8") as jfile:
+                                json.dump(jdata, jfile, indent=4)
+                            await meeting_notify_channel.send(file=discord.File(r'/root/Distance-Learning-Discord-Bot/absent_members_temp.json'))
+                            del jdata[i]
+                            with open("absent_members_temp.json", mode="w", encoding="utf8") as jfile:
+                                json.dump(jdata, jfile, indent=4)
+
 
                         with open("meeting_info.json", mode="r", encoding="utf8") as jfile:
+                            meeting_jdata = json.load(jfile)
+                        with open("meeting_save.json", mode="r", encoding="utf8") as jfile:
                             jdata = json.load(jfile)
-                        del jdata[i]
-                        with open("meeting_info.json", mode="w", encoding="utf8") as jfile:
+                        jdata[i] = meeting_jdata[i]
+                        with open("meeting_save.json", mode="w", encoding="utf8") as jfile:
                             json.dump(jdata, jfile, indent=4)
-                    
+                        del meeting_jdata[i]
+                        with open("meeting_info.json", mode="w", encoding="utf8") as jfile:
+                            json.dump(meeting_jdata, jfile, indent=4)
+
                 await asyncio.sleep(1)
                         
 
