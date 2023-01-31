@@ -5,6 +5,7 @@ import datetime
 import json
 import asyncio
 import pytz
+import os
 
 
 class MeetingTask(Cog_Extension):
@@ -24,7 +25,9 @@ class MeetingTask(Cog_Extension):
                     jdata = json.load(jfile)
 
                 for i in jdata.keys():
-                    
+                    with open("meeting_info.json", mode="r", encoding="utf8") as jfile:
+                        jdata = json.load(jfile)
+
                     guild_ID = jdata[i]["guild_ID"]
                     
 
@@ -84,34 +87,40 @@ class MeetingTask(Cog_Extension):
                         meeting_notify_channel = self.bot.get_channel(meeting_notify_channel_ID)
 
                         print(len(absent_members))
-                        if len(absent_members) < 200: # 200 is just for test.
+                        if len(absent_members) < 200:
                             embed.add_field(name="absent members", value=absent_members, inline=False)
                             await meeting_notify_channel.send(embed=embed)
                         else:
-                            embed.add_field(name="absent members", value="過長無法顯示，請參閱下方的檔案", inline=False)
+                            embed.add_field(name="absent members", value="(text is too long. Please chack the file below.)", inline=False)
                             await meeting_notify_channel.send(embed=embed)
-                            with open("absent_members_temp.json", mode="r", encoding="utf8") as jfile:
-                                jdata = json.load(jfile)
-                            jdata[i] = absent_members
-                            with open("absent_members_temp.json", mode="w", encoding="utf8") as jfile:
-                                json.dump(jdata, jfile, indent=4)
-                            await meeting_notify_channel.send(file=discord.File(r'/root/Distance-Learning-Discord-Bot/absent_members_temp.json'))
-                            del jdata[i]
-                            with open("absent_members_temp.json", mode="w", encoding="utf8") as jfile:
-                                json.dump(jdata, jfile, indent=4)
+                        data = {
+                            "guild_ID": guild_ID,
+                            "title": title,
+                            "voice_channel_ID": voice_channel_ID,
+                            "role_ID": role_ID,
+                            "time": [year, month, day, hour, minute],
+                            "absent_members": absent_members
+                        }
 
-
-                        with open("meeting_info.json", mode="r", encoding="utf8") as jfile:
-                            meeting_jdata = json.load(jfile)
+                        filename = f"meeting_record_{i}.json"
+                        with open(filename, "w") as jfile:
+                            json.dump(data, jfile, indent=4)
+                        await meeting_notify_channel.send(file=discord.File(filename))
+                        os.remove(filename)
+                        
                         with open("meeting_save.json", mode="r", encoding="utf8") as jfile:
                             jdata = json.load(jfile)
-                        jdata[i] = meeting_jdata[i]
-                        with open("meeting_save.json", mode="w", encoding="utf8") as jfile:
+                        jdata[i] = data
+                        with open("meeting_save.json", "w") as jfile:
                             json.dump(jdata, jfile, indent=4)
-                        del meeting_jdata[i]
-                        with open("meeting_info.json", mode="w", encoding="utf8") as jfile:
-                            json.dump(meeting_jdata, jfile, indent=4)
 
+                        with open("meeting_info.json", mode="r", encoding="utf8") as jfile:
+                            jdata = json.load(jfile)
+                        del jdata[i]
+                        with open("meeting_info.json", "w") as jfile:
+                            json.dump(jdata, jfile, indent=4)
+                        
+                        
                 await asyncio.sleep(1)
                         
 
