@@ -36,12 +36,6 @@ class Main(Cog_Extension):
             embed.add_field(name=guild, value=guild.id, inline=False)
         await interaction.response.send_message(embed=embed)
 
-    @app_commands.command(name="timezone-names", description="show all the timezone names")
-    async def guild(self, interaction: discord.Interaction):
-        await interaction.response.send_message("timezones")
-        message = await interaction.original_response()
-        await message.add_files(discord.File("timezone_names.txt", filename="timezone_names.txt"))
-
 
 async def setup(bot):
     await bot.add_cog(Main(bot))
