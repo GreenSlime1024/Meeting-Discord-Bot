@@ -6,6 +6,7 @@ import asyncio
 import json
 import datetime
 import pytz
+import os
 
 
 class Meet(Cog_Extension):
@@ -73,8 +74,8 @@ class Meet(Cog_Extension):
             embed.add_field(name="role", value=role.mention, inline=False)
         await interaction.response.send_message(embed=embed)
 
-    @app_commands.command(name="server-settings", description="set server settings")
-    async def server_settings(self, interaction: discord.Interaction, meeting_notify_channel: discord.TextChannel, timezone: str):
+    @app_commands.command(name="set_server_settings", description="set server settings")
+    async def set_server_settings(self, interaction: discord.Interaction, meeting_notify_channel: discord.TextChannel, timezone: str):
         data = {
             "meeting_notify_channel_id": meeting_notify_channel.id,
             "timezone": timezone
@@ -85,6 +86,30 @@ class Meet(Cog_Extension):
         with open("guilds_info.json", mode="w", encoding="utf8") as jfile:
             json.dump(jdata, jfile, indent=4)
         await interaction.response.send_message(f"set successfully.", ephemeral=False)
+
+    @app_commands.command(name="get_meeting_record_json", description="get meeting record json")
+    async def get_meeting_record_json(self, interaction: discord.Interaction, meeting_id: int):
+        with open("meeting_save.json", mode="r", encoding="utf8") as jfile:
+            jdata = json.load(jfile)
+        try:
+            data = jdata[str(meeting_id)]
+            filename = f"meeting_record_{meeting_id}.json"
+            with open(filename, "w") as jfile:
+                json.dump(data, jfile, indent=4)
+            await interaction.response.send_message(f"chack the file below.", ephemeral=False)
+            message = await interaction.original_response()
+            await message.add_files(discord.File(filename, filename=filename))
+            os.remove(filename)
+        except:
+            await interaction.response.send_message(f"meeting is not found.\nPlease check if the ID is correct.", ephemeral=True)
+        
+        
+
+    @app_commands.command(name="timezone-names", description="show all the timezone names")
+    async def guild(self, interaction: discord.Interaction):
+        await interaction.response.send_message("timezones")
+        message = await interaction.original_response()
+        await message.add_files(discord.File("timezone_names.txt", filename="timezone_names.txt"))
 
 
 async def setup(bot):
