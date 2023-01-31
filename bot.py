@@ -4,8 +4,10 @@ import json
 import os
 from discord.ext import commands
 
+
 def create_require_json():
-    filenames = ["absent_members_temp.json", "meeting_info_count.json", "meeting_info.json", "meeting_save.json", "guilds_info.json"]
+    filenames = ["absent_members_temp.json", "meeting_info_count.json",
+                 "meeting_info.json", "meeting_save.json", "guilds_info.json"]
     data = {}
     for filename in filenames:
         if os.path.exists(filename):
@@ -13,7 +15,7 @@ def create_require_json():
         else:
             with open(filename, "w") as jfile:
                 json.dump(data, jfile)
-    
+
     if os.path.exists("not_token.json"):
         pass
     else:
@@ -24,6 +26,7 @@ def create_require_json():
         with open("not_token.json", "w") as jfile:
             json.dump(data, jfile)
     print("require jsons are created.")
+
 
 class MyBot(commands.Bot):
     def __init__(self):

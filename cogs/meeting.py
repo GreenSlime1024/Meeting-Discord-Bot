@@ -25,7 +25,7 @@ class Meet(Cog_Extension):
         voice_channel_ID = voice_channel.id
         if role == None:
             role_ID = None
-        else: 
+        else:
             role_ID = role.id
 
         data = {
@@ -54,25 +54,27 @@ class Meet(Cog_Extension):
         with open("meeting_info_count.json", mode="w", encoding="utf8") as jfile:
             json.dump(jdata, jfile, indent=4)
 
-        time = datetime.datetime(year,month,day,hour,minute)
+        time = datetime.datetime(year, month, day, hour, minute)
         with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
         timezone = jdata[str(interaction.guild.id)]["timezone"]
         time_UTC = pytz.timezone(timezone).localize(time)
         timestamp = int(time_UTC.timestamp())
 
-        embed=discord.Embed(title=title, color=0x66ff47)
-        embed.add_field(name="voice channel", value=f"{voice_channel.mention}", inline=False)
-        embed.add_field(name="meeting time", value=f"<t:{timestamp}:F> <t:{timestamp}:R>", inline=False)
+        embed = discord.Embed(title=title, color=0x66ff47)
+        embed.add_field(name="voice channel",
+                        value=f"{voice_channel.mention}", inline=False)
+        embed.add_field(
+            name="meeting time", value=f"<t:{timestamp}:F> <t:{timestamp}:R>", inline=False)
         embed.set_footer(text=count)
         if role_ID == None:
             embed.add_field(name="role", value="@everyone", inline=False)
         else:
             embed.add_field(name="role", value=role.mention, inline=False)
         await interaction.response.send_message(embed=embed)
-    
+
     @app_commands.command(name="server-settings", description="set server settings")
-    async def server_settings(self, interaction: discord.Interaction, meeting_notify_channel: discord.TextChannel, timezone:str):
+    async def server_settings(self, interaction: discord.Interaction, meeting_notify_channel: discord.TextChannel, timezone: str):
         data = {
             "meeting_notify_channel_id": meeting_notify_channel.id,
             "timezone": timezone
@@ -83,6 +85,7 @@ class Meet(Cog_Extension):
         with open("guilds_info.json", mode="w", encoding="utf8") as jfile:
             json.dump(jdata, jfile, indent=4)
         await interaction.response.send_message(f"set successfully.", ephemeral=False)
+
 
 async def setup(bot):
     await bot.add_cog(Meet(bot))
