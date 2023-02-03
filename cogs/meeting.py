@@ -23,9 +23,25 @@ class Meet(Cog_Extension):
             month = datetime.datetime.today().month
         if year == None:
             year = datetime.datetime.today().year
-
         guild_ID = interaction.guild.id
+
+        with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
+            jdata = json.load(jfile)
+        timezone = jdata[str(guild_ID)]["timezone"]
+
+        with open("meeting_info.json", mode="r", encoding="utf8") as jfile:
+            jdata = json.load(jfile)
+        now_time = datetime.datetime.now().replace(second=0, microsecond=0)
+        now_time_UTC = pytz.timezone('UTC').localize(now_time)
+        meeting_time = pytz.timezone(timezone).localize(datetime.datetime(year, month, day, hour, minute))
+        meeting_time_UTC = meeting_time.astimezone(pytz.utc)
+        if meeting_time_UTC < now_time_UTC:
+            await error.error_message(interaction=interaction, error="time is expired")
+            return
+
+        
         voice_channel_ID = voice_channel.id
+
         if role == None:
             role_ID = None
         else:
@@ -40,8 +56,8 @@ class Meet(Cog_Extension):
         }
         try:
             time = datetime.datetime(year, month, day, hour, minute)
-        except ValueError as error:
-            await error.error_message(interaction=interaction, error=error)
+        except ValueError as e:
+            await error.error_message(interaction=interaction, error=e)
             return
 
         with open("meeting_info_count.json", mode="r", encoding="utf8") as jfile:
@@ -64,7 +80,7 @@ class Meet(Cog_Extension):
     
         with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
-        timezone = jdata[str(interaction.guild.id)]["timezone"]
+        
         time_UTC = pytz.timezone(timezone).localize(time)
         timestamp = int(time_UTC.timestamp())
 
@@ -109,7 +125,7 @@ class Meet(Cog_Extension):
             message = await interaction.original_response()
             await message.add_files(discord.File(filename, filename=filename))
             os.remove(filename)
-        except:
+        except KeyError:
             await error.error_message(interaction=interaction, error="Meeting is not found")
         
         
