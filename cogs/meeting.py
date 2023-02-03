@@ -110,7 +110,7 @@ class Meet(Cog_Extension):
             await message.add_files(discord.File(filename, filename=filename))
             os.remove(filename)
         except:
-            await interaction.response.send_message(f"Error!\nMeeting is not found.\nPlease check if the ID is correct.", ephemeral=True)
+            error.error_message(interaction=interaction, error="Meeting is not found.\nPlease check if the ID is correct")
         
         
 
