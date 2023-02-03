@@ -7,6 +7,7 @@ import json
 import datetime
 import pytz
 import os
+from core.error import error
 
 
 class Meet(Cog_Extension):
@@ -22,6 +23,7 @@ class Meet(Cog_Extension):
             month = datetime.datetime.today().month
         if year == None:
             year = datetime.datetime.today().year
+
         guild_ID = interaction.guild.id
         voice_channel_ID = voice_channel.id
         if role == None:
@@ -36,6 +38,11 @@ class Meet(Cog_Extension):
             "role_ID": role_ID,
             "time": [year, month, day, hour, minute]
         }
+        try:
+            time = datetime.datetime(year, month, day, hour, minute)
+        except ValueError as error:
+            await error.error_message(interaction=interaction, error=error)
+            return
 
         with open("meeting_info_count.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
@@ -54,8 +61,7 @@ class Meet(Cog_Extension):
 
         with open("meeting_info_count.json", mode="w", encoding="utf8") as jfile:
             json.dump(jdata, jfile, indent=4)
-
-        time = datetime.datetime(year, month, day, hour, minute)
+    
         with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
         timezone = jdata[str(interaction.guild.id)]["timezone"]
@@ -80,12 +86,15 @@ class Meet(Cog_Extension):
             "meeting_notify_channel_id": meeting_notify_channel.id,
             "timezone": timezone
         }
-        with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
-            jdata = json.load(jfile)
-        jdata[str(interaction.guild.id)] = data
-        with open("guilds_info.json", mode="w", encoding="utf8") as jfile:
-            json.dump(jdata, jfile, indent=4)
-        await interaction.response.send_message(f"set successfully.", ephemeral=False)
+        if timezone in pytz.all_timezones:
+            with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
+                jdata = json.load(jfile)
+            jdata[str(interaction.guild.id)] = data
+            with open("guilds_info.json", mode="w", encoding="utf8") as jfile:
+                json.dump(jdata, jfile, indent=4)
+            await interaction.response.send_message(f"set successfully.", ephemeral=False)
+        else:
+            await interaction.response.send_message(f"Error!\nThe time zone you typed is not in pytz.all_timezone.\nPlease use </timezone-names:1069661065371205703> to check the correct timezone.", ephemeral=False)
 
     @app_commands.command(name="get_meeting_record_json", description="get meeting record json")
     async def get_meeting_record_json(self, interaction: discord.Interaction, meeting_id: int):
@@ -101,7 +110,7 @@ class Meet(Cog_Extension):
             await message.add_files(discord.File(filename, filename=filename))
             os.remove(filename)
         except:
-            await interaction.response.send_message(f"meeting is not found.\nPlease check if the ID is correct.", ephemeral=True)
+            await interaction.response.send_message(f"Error!\nMeeting is not found.\nPlease check if the ID is correct.", ephemeral=True)
         
         
 
