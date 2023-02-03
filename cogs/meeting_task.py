@@ -49,9 +49,6 @@ class MeetingTask(Cog_Extension):
                         datetime.datetime(year, month, day, hour, minute))
                     meeting_time_UTC = meeting_time.astimezone(pytz.utc)
 
-                    print(f"now time: {now_time_UTC}")
-                    print(f"meeting_time: {meeting_time}")
-
                     if meeting_time_UTC == now_time_UTC:
                         title = jdata[i]["title"]
                         voice_channel_ID = jdata[i]["voice_channel_ID"]
@@ -67,22 +64,25 @@ class MeetingTask(Cog_Extension):
                         embed = discord.Embed(
                             title=title, description=voice_channel.mention, color=0x474eff)
                         embed.set_footer(text=i)
-                        absent_members = ""
+                        absent_members = []
+                        attend_members = []
+
                         if role == None:
                             embed.add_field(
                                 name="role", value="@everyone", inline=False)
                             for member in guild.members:
                                 if member not in voice_channel.members:
-                                    absent_members += member.mention+" "
-                                    print(member.mention)
+                                    absent_members.append(member.mention)
 
                         else:
                             embed.add_field(
                                 name="role", value=role.mention, inline=False)
                             for member in role.members:
                                 if member not in voice_channel.members:
-                                    absent_members += member.mention+" "
-                                    print(member.mention)
+                                    absent_members.append(member.mention)
+
+                        for member in voice_channel.members:
+                            attend_members.append(member.mention)
 
                         with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
                             jdata = json.load(jfile)
@@ -91,22 +91,34 @@ class MeetingTask(Cog_Extension):
                         meeting_notify_channel = self.bot.get_channel(
                             meeting_notify_channel_ID)
 
-                        print(len(absent_members))
-                        if len(absent_members) < 200:
-                            embed.add_field(name="absent members",
-                                            value=absent_members, inline=False)
-                            await meeting_notify_channel.send(embed=embed)
+                        if len(absent_members) > 800:
+                            embed.add_field(name="absent members", value="(text is too long. Please chack the file below.)", inline=False)
                         else:
-                            embed.add_field(
-                                name="absent members", value="(text is too long. Please chack the file below.)", inline=False)
-                            await meeting_notify_channel.send(embed=embed)
+                            if len(absent_members) == 0:
+                                embed.add_field(name="absent members", value="None", inline=False)
+                            else:
+                                embed.add_field(name="absent members", value=" ".join(absent_members), inline=False)
+                        
+                        print(attend_members)
+
+                        if len(attend_members) > 800:
+                            embed.add_field(name="attend members", value="(text is too long. Please chack the file below.)", inline=False)
+                        else:
+                            if len(attend_members) == 0:
+                                embed.add_field(name="attend members", value="None", inline=False)
+                            else:
+                                embed.add_field(name="attend members", value=" ".join(attend_members), inline=False)
+
+                        await meeting_notify_channel.send(embed=embed)
+
                         data = {
                             "guild_ID": guild_ID,
                             "title": title,
                             "voice_channel_ID": voice_channel_ID,
                             "role_ID": role_ID,
                             "time": [year, month, day, hour, minute],
-                            "absent_members": absent_members
+                            "absent_members": absent_members,
+                            "attend_membets": attend_members
                         }
 
                         filename = f"meeting_record_{i}.json"
