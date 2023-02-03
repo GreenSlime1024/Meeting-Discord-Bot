@@ -94,7 +94,7 @@ class Meet(Cog_Extension):
                 json.dump(jdata, jfile, indent=4)
             await interaction.response.send_message(f"set successfully.", ephemeral=False)
         else:
-            await interaction.response.send_message(f"Error!\nThe time zone you typed is not in pytz.all_timezone.\nPlease use </timezone-names:1069661065371205703> to check the correct timezone.", ephemeral=False)
+            await error.error_message(interaction=interaction, error="timezone is not correct")
 
     @app_commands.command(name="get_meeting_record_json", description="get meeting record json")
     async def get_meeting_record_json(self, interaction: discord.Interaction, meeting_id: int):
@@ -110,7 +110,7 @@ class Meet(Cog_Extension):
             await message.add_files(discord.File(filename, filename=filename))
             os.remove(filename)
         except:
-            error.error_message(interaction=interaction, error="Meeting is not found.\nPlease check if the ID is correct")
+            await error.error_message(interaction=interaction, error="Meeting is not found")
         
         
 
