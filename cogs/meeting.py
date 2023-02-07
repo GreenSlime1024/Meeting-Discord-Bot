@@ -20,7 +20,10 @@ class Meet(Cog_Extension):
         with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
         guild_ID = interaction.guild.id
-        timezone = jdata[str(guild_ID)]["timezone"]
+        try:
+            timezone = jdata[str(guild_ID)]["timezone"]
+        except KeyError:
+            await error.error_message(interaction=interaction, error="guild setting not found", description="You haven't set server settings.\nPlease use </set_server_settings:1072440724118847554> to set.")
 
         with open("meeting_info.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)

@@ -6,8 +6,8 @@ from discord.ext import commands
 
 
 def create_require_json():
-    filenames = ["absent_members_temp.json", "meeting_info_count.json",
-                 "meeting_info.json", "meeting_save.json", "guilds_info.json"]
+    filenames = ["guilds_info.json",
+                 "meeting_info.json", "meeting_save.json"]
     data = {}
     for filename in filenames:
         if os.path.exists(filename):
@@ -15,6 +15,16 @@ def create_require_json():
         else:
             with open(filename, "w") as jfile:
                 json.dump(data, jfile, indent=4)
+                 
+
+    if os.path.exists("meeting_info_count.json"):
+        pass
+    else:
+        data = {
+            "count": 0
+        }
+        with open("meeting_info_count.json", "w") as jfile:
+            json.dump(data, jfile, indent=4)
 
     if os.path.exists("not_token.json"):
         pass
