@@ -14,7 +14,7 @@ def create_require_json():
             pass
         else:
             with open(filename, "w") as jfile:
-                json.dump(data, jfile)
+                json.dump(data, jfile, indent=4)
 
     if os.path.exists("not_token.json"):
         pass
@@ -24,7 +24,7 @@ def create_require_json():
             "TOKEN": TOKEN
         }
         with open("not_token.json", "w") as jfile:
-            json.dump(data, jfile)
+            json.dump(data, jfile, indent=4)
     print("require jsons are created.")
 
 
