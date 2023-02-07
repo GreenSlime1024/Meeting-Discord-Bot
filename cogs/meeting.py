@@ -17,24 +17,32 @@ class Meet(Cog_Extension):
 
     @app_commands.command(name="set_meeting", description="set the meeting voice channel and when to begin")
     async def set_meeting(self, interaction: discord.Interaction, title: str, voice_channel: discord.VoiceChannel,  hour: int, minute: int, role: discord.Role = None, day: int = None, month: int = None, year: int = None):
-        if day == None:
-            day = datetime.datetime.today().day
-        if month == None:
-            month = datetime.datetime.today().month
-        if year == None:
-            year = datetime.datetime.today().year
-        guild_ID = interaction.guild.id
-
         with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
+        guild_ID = interaction.guild.id
         timezone = jdata[str(guild_ID)]["timezone"]
 
         with open("meeting_info.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
-        now_time = datetime.datetime.now().replace(second=0, microsecond=0)
+        now_time = datetime.datetime.utcnow().replace(second=0, microsecond=0)
         now_time_UTC = pytz.timezone('UTC').localize(now_time)
+        guild_time = now_time.astimezone(pytz.timezone(timezone))
+
+        if day == None:
+            day = guild_time.day
+        if month == None:
+            month = guild_time.month
+        if year == None:
+            year = guild_time.year
+
         meeting_time = pytz.timezone(timezone).localize(datetime.datetime(year, month, day, hour, minute))
         meeting_time_UTC = meeting_time.astimezone(pytz.utc)
+
+        print(now_time)
+        print(now_time_UTC)
+        print(meeting_time)
+        print(meeting_time_UTC)
+        
         if meeting_time_UTC < now_time_UTC:
             await error.error_message(interaction=interaction, error="time is expired")
             return
