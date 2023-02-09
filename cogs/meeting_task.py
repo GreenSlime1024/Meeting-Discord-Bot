@@ -55,15 +55,17 @@ class MeetingTask(Cog_Extension):
                         voice_channel = self.bot.get_channel(voice_channel_ID)
                         role_ID = jdata[i]["role_ID"]
                         guild = self.bot.get_guild(guild_ID)
+                        timestamp = int(meeting_time_UTC.timestamp())
 
                         if role_ID == None:
                             role = None
                         else:
                             role = guild.get_role(role_ID)
 
-                        embed = discord.Embed(
-                            title=title, description=voice_channel.mention, color=0x474eff)
-                        embed.set_footer(text=i)
+                        embed = discord.Embed(title=title, color=0x474eff)
+                        embed.add_field(name="voice channel", value=f"{voice_channel.mention}", inline=False)
+                        embed.add_field(name="meeting time", value=f"<t:{timestamp}:F> <t:{timestamp}:R>", inline=False)
+                        
                         absent_members = []
                         attend_members = []
 
@@ -98,8 +100,6 @@ class MeetingTask(Cog_Extension):
                                 embed.add_field(name="absent members", value="None", inline=False)
                             else:
                                 embed.add_field(name="absent members", value=" ".join(absent_members), inline=False)
-                        
-                        print(attend_members)
 
                         if len(attend_members) > 800:
                             embed.add_field(name="attend members", value="(text is too long. Please chack the file below.)", inline=False)
@@ -108,6 +108,7 @@ class MeetingTask(Cog_Extension):
                                 embed.add_field(name="attend members", value="None", inline=False)
                             else:
                                 embed.add_field(name="attend members", value=" ".join(attend_members), inline=False)
+                        embed.set_footer(text=i)
 
                         await meeting_notify_channel.send(embed=embed)
 
