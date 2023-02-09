@@ -8,6 +8,7 @@ import datetime
 import pytz
 import os
 from core.error import error
+import uuid
 
 
 class Meet(Cog_Extension):
@@ -40,17 +41,11 @@ class Meet(Cog_Extension):
 
         meeting_time = pytz.timezone(timezone).localize(datetime.datetime(year, month, day, hour, minute))
         meeting_time_UTC = meeting_time.astimezone(pytz.utc)
-
-        print(now_time)
-        print(now_time_UTC)
-        print(meeting_time)
-        print(meeting_time_UTC)
         
         if meeting_time_UTC < now_time_UTC:
             await error.error_message(interaction=interaction, error="time is expired")
             return
-
-        
+ 
         voice_channel_ID = voice_channel.id
 
         if role == None:
@@ -71,24 +66,15 @@ class Meet(Cog_Extension):
             await error.error_message(interaction=interaction, error=e)
             return
 
-        with open("meeting_info_count.json", mode="r", encoding="utf8") as jfile:
-            jdata = json.load(jfile)
-        count = jdata["count"]
+        meeting_id = str(uuid.uuid4())
 
         with open("meeting_info.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
-        jdata[count] = data
+        jdata[meeting_id] = data
 
         with open("meeting_info.json", mode="w", encoding="utf8") as jfile:
             json.dump(jdata, jfile, indent=4)
 
-        with open("meeting_info_count.json", mode="r", encoding="utf8") as jfile:
-            jdata = json.load(jfile)
-        jdata["count"] = count+1
-
-        with open("meeting_info_count.json", mode="w", encoding="utf8") as jfile:
-            json.dump(jdata, jfile, indent=4)
-    
         with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
         
@@ -100,7 +86,7 @@ class Meet(Cog_Extension):
                         value=f"{voice_channel.mention}", inline=False)
         embed.add_field(
             name="meeting time", value=f"<t:{timestamp}:F> <t:{timestamp}:R>", inline=False)
-        embed.set_footer(text=count)
+        embed.set_footer(text=meeting_id)
         if role_ID == None:
             embed.add_field(name="role", value="@everyone", inline=False)
         else:
