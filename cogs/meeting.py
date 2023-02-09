@@ -110,7 +110,7 @@ class Meet(Cog_Extension):
             await error.error_message(interaction=interaction, error="timezone is not correct")
 
     @app_commands.command(name="get_meeting_record_json", description="get meeting record json")
-    async def get_meeting_record_json(self, interaction: discord.Interaction, meeting_id: int):
+    async def get_meeting_record_json(self, interaction: discord.Interaction, meeting_id: str):
         with open("meeting_save.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
         try:
@@ -125,8 +125,6 @@ class Meet(Cog_Extension):
         except KeyError:
             await error.error_message(interaction=interaction, error="Meeting is not found")
         
-        
-
     @app_commands.command(name="timezone-names", description="show all the timezone names")
     async def guild(self, interaction: discord.Interaction):
         await interaction.response.send_message("timezones")
