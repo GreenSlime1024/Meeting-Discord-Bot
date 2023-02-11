@@ -2,7 +2,6 @@ import discord
 from discord.ext import commands
 from core.classes import Cog_Extension
 from discord import app_commands
-import asyncio
 import json
 import datetime
 import pytz
@@ -17,6 +16,7 @@ class Meet(Cog_Extension):
         print("meeting cog loaded.")
 
     @app_commands.command(name="set_meeting", description="set the meeting voice channel and when to begin")
+    @app_commands.describe(title="title of the meeting", voice_channel="Voice channel where meeting start", hour="hour that meeting will starts at (24-hour)", minute="minute that meeting will starts at", day="day that meeting will starts at", month="month that meeting will starts at", year="year that meeting will starts at", role="members of the role that are asked to join the meeting")
     async def set_meeting(self, interaction: discord.Interaction, title: str, voice_channel: discord.VoiceChannel,  hour: int, minute: int, role: discord.Role = None, day: int = None, month: int = None, year: int = None):
         with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
@@ -94,6 +94,7 @@ class Meet(Cog_Extension):
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="set_server_settings", description="set server settings")
+    @app_commands.describe(meeting_notify_channel="Text channel where the meeting notification will be sent", timezone="your timezone")
     async def set_server_settings(self, interaction: discord.Interaction, meeting_notify_channel: discord.TextChannel, timezone: str):
         data = {
             "meeting_notify_channel_id": meeting_notify_channel.id,
@@ -110,6 +111,7 @@ class Meet(Cog_Extension):
             await error.error_message(interaction=interaction, error="timezone is not correct")
 
     @app_commands.command(name="get_meeting_record_json", description="get meeting record json")
+    @app_commands.describe(meeting_id="You can find this at the embed footer")
     async def get_meeting_record_json(self, interaction: discord.Interaction, meeting_id: str):
         with open("meeting_save.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)

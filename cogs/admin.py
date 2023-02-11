@@ -17,25 +17,19 @@ class Admin(Cog_Extension):
         await ctx.reply(f"synced {len(fmt)} commands")
 
     @commands.is_owner()
-    @app_commands.command()
-    async def system(self, interaction: discord.Interaction, command: str):
-        os.system(command)
-        await interaction.response.send_message(f"`{command}` sended", ephemeral=False)
-
-    @commands.is_owner()
-    @app_commands.command()
+    @app_commands.command(name="load",description="load extension")
     async def load(self, interaction: discord.Interaction, extension: str):
         await self.bot.load_extension(f"cogs.{extension}")
         await interaction.response.send_message(f"loaded `{extension}`", ephemeral=False)
 
     @commands.is_owner()
-    @app_commands.command()
+    @app_commands.command(name="reload", description="reload extension")
     async def reload(self, interaction: discord.Interaction, extension: str):
         await self.bot.reload_extension(f"cogs.{extension}")
         await interaction.response.send_message(f"reloaded `{extension}`", ephemeral=False)
 
     @commands.is_owner()
-    @app_commands.command()
+    @app_commands.command(name="unload",description="unload extension")
     async def unload(self, interaction: discord.Interaction, extension: str):
         await self.bot.unload_extension(f"cogs.{extension}")
         await interaction.response.send_message(f"unloaded `{extension}`", ephemeral=False)
