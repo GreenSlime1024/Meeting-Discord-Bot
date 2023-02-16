@@ -15,16 +15,6 @@ def create_require_json():
         else:
             with open(filename, "w") as jfile:
                 json.dump(data, jfile, indent=4)
-                 
-
-    if os.path.exists("meeting_info_count.json"):
-        pass
-    else:
-        data = {
-            "count": 0
-        }
-        with open("meeting_info_count.json", "w") as jfile:
-            json.dump(data, jfile, indent=4)
 
     if os.path.exists("not_token.json"):
         pass

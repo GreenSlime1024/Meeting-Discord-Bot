@@ -15,7 +15,6 @@ class MeetingTask(Cog_Extension):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.counter = 0
 
         async def MeetingTask():
             await self.bot.wait_until_ready()
