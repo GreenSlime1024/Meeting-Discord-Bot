@@ -26,7 +26,7 @@ class Meet(Cog_Extension):
         except KeyError:
             await error.error_message(interaction=interaction, error="guild setting not found", description="You haven't set server settings.\nPlease use </set_server_settings:1072440724118847554> to set.")
 
-        with open("meeting_info.json", mode="r", encoding="utf8") as jfile:
+        with open("before_meeting.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
         now_time = datetime.datetime.utcnow().replace(second=0, microsecond=0)
         now_time_UTC = pytz.timezone('UTC').localize(now_time)
@@ -68,11 +68,11 @@ class Meet(Cog_Extension):
 
         meeting_id = str(uuid.uuid4())
 
-        with open("meeting_info.json", mode="r", encoding="utf8") as jfile:
+        with open("before_meeting.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
         jdata[meeting_id] = data
 
-        with open("meeting_info.json", mode="w", encoding="utf8") as jfile:
+        with open("before_meeting.json", mode="w", encoding="utf8") as jfile:
             json.dump(jdata, jfile, indent=4)
 
         with open("guilds_info.json", mode="r", encoding="utf8") as jfile:

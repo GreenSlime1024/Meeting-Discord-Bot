@@ -16,15 +16,15 @@ class MeetingTask(Cog_Extension):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        async def MeetingTask():
+        async def StartCheck():
             await self.bot.wait_until_ready()
             while not self.bot.is_closed():
 
-                with open("meeting_info.json", mode="r", encoding="utf8") as jfile:
+                with open("before_meeting.json", mode="r", encoding="utf8") as jfile:
                     jdata = json.load(jfile)
 
                 for i in jdata.keys():
-                    with open("meeting_info.json", mode="r", encoding="utf8") as jfile:
+                    with open("before_meeting.json", mode="r", encoding="utf8") as jfile:
                         jdata = json.load(jfile)
 
                     guild_ID = jdata[i]["guild_ID"]
@@ -33,7 +33,7 @@ class MeetingTask(Cog_Extension):
                         jdata = json.load(jfile)
                     timezone = jdata[str(guild_ID)]["timezone"]
 
-                    with open("meeting_info.json", mode="r", encoding="utf8") as jfile:
+                    with open("before_meeting.json", mode="r", encoding="utf8") as jfile:
                         jdata = json.load(jfile)
 
                     year = jdata[i]["time"][0]
@@ -133,15 +133,15 @@ class MeetingTask(Cog_Extension):
                         with open("meeting_save.json", "w") as jfile:
                             json.dump(jdata, jfile, indent=4)
 
-                        with open("meeting_info.json", mode="r", encoding="utf8") as jfile:
+                        with open("before_meeting.json", mode="r", encoding="utf8") as jfile:
                             jdata = json.load(jfile)
                         del jdata[i]
-                        with open("meeting_info.json", "w") as jfile:
+                        with open("before_meeting.json", "w") as jfile:
                             json.dump(jdata, jfile, indent=4)
 
                 await asyncio.sleep(1)
 
-        self.bg_task = self.bot.loop.create_task(MeetingTask())
+        self.bg_task = self.bot.loop.create_task(StartCheck())
 
 
 async def setup(bot):
