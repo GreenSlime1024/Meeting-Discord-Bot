@@ -8,6 +8,7 @@ import pytz
 import os
 from core.error import error
 import uuid
+from discord.ui import Button, View
 
 
 class Meet(Cog_Extension):
@@ -25,6 +26,7 @@ class Meet(Cog_Extension):
             timezone = jdata[str(guild_ID)]["timezone"]
         except KeyError:
             await error.error_message(interaction=interaction, error="guild setting not found", description="You haven't set server settings.\nPlease use </set_server_settings:1072440724118847554> to set.")
+            return
 
         with open("before_meeting.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
@@ -108,7 +110,8 @@ class Meet(Cog_Extension):
                 json.dump(jdata, jfile, indent=4)
             await interaction.response.send_message(f"set successfully.", ephemeral=False)
         else:
-            await error.error_message(interaction=interaction, error="timezone is not correct")
+            await error.error_message(interaction=interaction, error="timezone is not correct", description="Time zone you set is not correct\nPlease use </timezone-names:1072440724118847556> to check.")
+            return
 
     @app_commands.command(name="get_meeting_record_json", description="get meeting record json")
     @app_commands.describe(meeting_id="You can find this at the embed footer")
