@@ -44,9 +44,6 @@ class MeetingTask(Cog_Extension):
             now_time_UTC = datetime.datetime.now(datetime.timezone.utc).replace(second=0, microsecond=0)
             meeting_time = pytz.timezone(timezone).localize(datetime.datetime(year, month, day, hour, minute))
             meeting_time_UTC = meeting_time.astimezone(pytz.utc)
-            print('meeting_time_UTC: ', meeting_time_UTC)
-            print('now_time_UTC: ', now_time_UTC)
-
 
             if meeting_time_UTC == now_time_UTC:
                 meeting_data = jdata[i]
