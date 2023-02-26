@@ -40,60 +40,112 @@ class Meet(Cog_Extension):
             month = guild_time.month
         if year == None:
             year = guild_time.year
-
-        meeting_time = pytz.timezone(timezone).localize(datetime.datetime(year, month, day, hour, minute))
+        
+        try:
+            meeting_time = pytz.timezone(timezone).localize(datetime.datetime(year, month, day, hour, minute))
+        except ValueError as e:
+            await error.error_message(interaction=interaction, error=e, description="Please check if the time you typed is correct.")
         meeting_time_UTC = meeting_time.astimezone(pytz.utc)
         
         if meeting_time_UTC < now_time_UTC:
-            await error.error_message(interaction=interaction, error="time is expired")
+            await error.error_message(interaction=interaction, error="time had expired")
             return
  
         voice_channel_ID = voice_channel.id
+        meeting_id = str(uuid.uuid4())
+        print(meeting_id)
 
         if role == None:
             role_ID = None
         else:
             role_ID = role.id
 
-        data = {
-            "guild_ID": guild_ID,
-            "title": title,
-            "voice_channel_ID": voice_channel_ID,
-            "role_ID": role_ID,
-            "time": [year, month, day, hour, minute]
-        }
-        try:
-            time = datetime.datetime(year, month, day, hour, minute)
-        except ValueError as e:
-            await error.error_message(interaction=interaction, error=e)
-            return
-
-        meeting_id = str(uuid.uuid4())
-
-        with open("before_meeting.json", mode="r", encoding="utf8") as jfile:
-            jdata = json.load(jfile)
-        jdata[meeting_id] = data
-
-        with open("before_meeting.json", mode="w", encoding="utf8") as jfile:
-            json.dump(jdata, jfile, indent=4)
-
         with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
-        
-        time_UTC = pytz.timezone(timezone).localize(time)
-        timestamp = int(time_UTC.timestamp())
+
+        timestamp = int(meeting_time.timestamp())
 
         embed = discord.Embed(title=title, color=0x66ff47)
-        embed.add_field(name="voice channel",
-                        value=f"{voice_channel.mention}", inline=False)
-        embed.add_field(
-            name="meeting time", value=f"<t:{timestamp}:F> <t:{timestamp}:R>", inline=False)
+        embed.add_field(name="voice channel", value=f"{voice_channel.mention}", inline=False)
+        embed.add_field(name="meeting time", value=f"<t:{timestamp}:F> <t:{timestamp}:R>", inline=False)
         embed.set_footer(text=meeting_id)
         if role_ID == None:
             embed.add_field(name="role", value="@everyone", inline=False)
         else:
             embed.add_field(name="role", value=role.mention, inline=False)
-        await interaction.response.send_message(embed=embed)
+
+        button1 = Button(label="cancel", style=discord.ButtonStyle.red)
+        button2 = Button(label="close", style=discord.ButtonStyle.red)
+        view = View()
+        view.add_item(button1)
+        view.add_item(button2)
+        await interaction.response.send_message(embed=embed, view=view)
+
+
+        async def cancel(interaction):
+            with open("before_meeting.json", mode="r", encoding="utf8") as jfile:
+                jdata = json.load(jfile)            
+            try:
+                data = jdata[meeting_id]
+                
+            except KeyError as e:
+                await error.error_message(interaction=interaction, error="The meeting is not pending.")
+                return
+            del jdata[meeting_id]
+            with open("before_meeting.json", mode="w", encoding="utf8") as jfile:
+                json.dump(jdata, jfile, indent=4)
+            await interaction.response.send_message("canceled.")
+
+            text_channel_ID = data["text_channel_ID"]
+            message_ID = data["message_ID"]
+            text_channel = self.bot.get_channel(text_channel_ID)
+            message = await text_channel.fetch_message(message_ID)
+            await message.delete()
+
+
+        async def close(interaction):
+            with open("durning_meeting.json", mode="r", encoding="utf8") as jfile:
+                jdata = json.load(jfile)
+            try:
+                data = jdata[meeting_id]
+            except KeyError:
+                await error.error_message(interaction=interaction, error="The meeting is not in progress.")
+                return
+            del jdata[meeting_id]
+            with open("durning_meeting.json", mode="w", encoding="utf8") as jfile:
+                json.dump(jdata, jfile, indent=4)
+            
+            with open("after_meeting.json", mode="r", encoding="utf8") as jfile:
+                jdata = json.load(jfile)
+            jdata[meeting_id] = data
+            with open("after_meeting.json", mode="w", encoding="utf8") as jfile:
+                json.dump(jdata, jfile, indent=4)
+            await interaction.response.send_message("closed.")
+            
+
+        button1.callback = cancel
+        button2.callback = close
+
+        message = await interaction.original_response()
+        message_id = message.id
+        text_channel_ID = message.channel.id
+        data = {
+            "guild_ID": guild_ID,
+            "title": title,
+            "voice_channel_ID": voice_channel_ID,
+            "text_channel_ID": text_channel_ID,
+            "message_ID": message_id,
+            "role_ID": role_ID,
+            "time": [year, month, day, hour, minute]
+        }
+
+        with open("before_meeting.json", mode="r", encoding="utf8") as jfile:
+            jdata = json.load(jfile)
+        jdata[meeting_id] = data
+        with open("before_meeting.json", mode="w", encoding="utf8") as jfile:
+            json.dump(jdata, jfile, indent=4)
+
+
 
     @app_commands.command(name="set_server_settings", description="set server settings")
     @app_commands.describe(meeting_notify_channel="Text channel where the meeting notification will be sent", timezone="your timezone")
@@ -108,9 +160,9 @@ class Meet(Cog_Extension):
             jdata[str(interaction.guild.id)] = data
             with open("guilds_info.json", mode="w", encoding="utf8") as jfile:
                 json.dump(jdata, jfile, indent=4)
-            await interaction.response.send_message(f"set successfully.", ephemeral=False)
+            await interaction.response.send_message(f"guild info set.", ephemeral=False)
         else:
-            await error.error_message(interaction=interaction, error="timezone is not correct", description="Time zone you set is not correct\nPlease use </timezone-names:1072440724118847556> to check.")
+            await error.error_message(interaction=interaction, error="timezone is not correct", description="Time zone you typed is not correct\nPlease use </timezone-names:1072440724118847556> to check.")
             return
 
     @app_commands.command(name="get_meeting_record_json", description="get meeting record json")
