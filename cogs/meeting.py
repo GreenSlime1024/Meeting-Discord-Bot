@@ -52,8 +52,7 @@ class Meet(Cog_Extension):
             return
  
         voice_channel_ID = voice_channel.id
-        meeting_id = str(uuid.uuid4())
-        print(meeting_id)
+        meeting_ID = str(uuid.uuid4())
 
         if role == None:
             role_ID = None
@@ -65,33 +64,35 @@ class Meet(Cog_Extension):
 
         timestamp = int(meeting_time.timestamp())
 
-        embed = discord.Embed(title=title, color=0x66ff47)
-        embed.add_field(name="voice channel", value=f"{voice_channel.mention}", inline=False)
-        embed.add_field(name="meeting time", value=f"<t:{timestamp}:F> <t:{timestamp}:R>", inline=False)
-        embed.set_footer(text=meeting_id)
+        embed_set = discord.Embed(title=title, color=0x66ff47)
+        embed_set.add_field(name="voice channel", value=f"{voice_channel.mention}", inline=False)
+        embed_set.add_field(name="meeting time", value=f"<t:{timestamp}:F> <t:{timestamp}:R>", inline=False)
+        embed_set.set_footer(text=meeting_ID)
         if role_ID == None:
-            embed.add_field(name="role", value="@everyone", inline=False)
+            embed_set.add_field(name="role", value="@everyone", inline=False)
         else:
-            embed.add_field(name="role", value=role.mention, inline=False)
+            embed_set.add_field(name="role", value=role.mention, inline=False)
 
         button1 = Button(label="cancel", style=discord.ButtonStyle.red)
         button2 = Button(label="close", style=discord.ButtonStyle.red)
+        button3 = Button(label="roll call", style=discord.ButtonStyle.blurple)
         view = View()
         view.add_item(button1)
         view.add_item(button2)
-        await interaction.response.send_message(embed=embed, view=view)
+        view.add_item(button3)
+        await interaction.response.send_message(embed=embed_set, view=view)
 
 
         async def cancel(interaction):
             with open("before_meeting.json", mode="r", encoding="utf8") as jfile:
-                jdata = json.load(jfile)            
+                jdata = json.load(jfile)
             try:
-                data = jdata[meeting_id]
+                data = jdata[meeting_ID]
                 
             except KeyError as e:
                 await error.error_message(interaction=interaction, error="The meeting is not pending.")
                 return
-            del jdata[meeting_id]
+            del jdata[meeting_ID]
             with open("before_meeting.json", mode="w", encoding="utf8") as jfile:
                 json.dump(jdata, jfile, indent=4)
             await interaction.response.send_message("canceled.")
@@ -107,24 +108,91 @@ class Meet(Cog_Extension):
             with open("durning_meeting.json", mode="r", encoding="utf8") as jfile:
                 jdata = json.load(jfile)
             try:
-                data = jdata[meeting_id]
+                data = jdata[meeting_ID]
             except KeyError:
                 await error.error_message(interaction=interaction, error="The meeting is not in progress.")
                 return
-            del jdata[meeting_id]
+            del jdata[meeting_ID]
             with open("durning_meeting.json", mode="w", encoding="utf8") as jfile:
                 json.dump(jdata, jfile, indent=4)
             
             with open("after_meeting.json", mode="r", encoding="utf8") as jfile:
                 jdata = json.load(jfile)
-            jdata[meeting_id] = data
+            jdata[meeting_ID] = data
             with open("after_meeting.json", mode="w", encoding="utf8") as jfile:
                 json.dump(jdata, jfile, indent=4)
             await interaction.response.send_message("closed.")
+
+        async def roll_call(interaction):
+            absent_members = []
+            attend_members = []
+            with open("durning_meeting.json", mode="r", encoding="utf8") as jfile:
+                jdata = json.load(jfile)
+            guild_ID = jdata[meeting_ID]["guild_ID"]
+            guild = self.bot.get_guild(guild_ID)
+            title = jdata[meeting_ID]["title"]
+            voice_channel_ID = jdata[meeting_ID]["voice_channel_ID"]
+            voice_channel = self.bot.get_channel(voice_channel_ID)
+            role_ID = jdata[meeting_ID]["role_ID"]
+            guild = self.bot.get_guild(guild_ID)
+            timestamp = int(meeting_time_UTC.timestamp())
+            if role_ID == None:
+                role = None
+            else:
+                role = guild.get_role(role_ID)
+
+            embed_button = discord.Embed(title=title, color=0x474eff)
+            embed_button.add_field(name="voice channel", value=f"{voice_channel.mention}", inline=False)
+            embed_button.add_field(name="meeting time", value=f"<t:{timestamp}:F> <t:{timestamp}:R>", inline=False)
+
+            if role == None:
+                embed_button.add_field(name="role", value="@everyone", inline=False)
+                for member in guild.members:
+                    if member not in voice_channel.members:
+                        absent_members.append(member.mention)
+
+            else:
+                embed_button.add_field(name="role", value=role.mention, inline=False)
+                for member in role.members:
+                    if member not in voice_channel.members:
+                        absent_members.append(member.mention)
+
+            for member in voice_channel.members:
+                attend_members.append(member.mention)
+
+            if len(absent_members) > 800:
+                embed_button.add_field(name="absent members", value="(text is too long. Please chack the file below.)", inline=False)
+            else:
+                if len(absent_members) == 0:
+                    embed_button.add_field(name="absent members", value="None", inline=False)
+                else:
+                    embed_button.add_field(name="absent members", value=" ".join(absent_members), inline=False)
+
+            if len(attend_members) > 800:
+                embed_button.add_field(name="attend members", value="(text is too long. Please chack the file below.)", inline=False)
+            else:
+                if len(attend_members) == 0:
+                    embed_button.add_field(name="attend members", value="None", inline=False)
+                else:
+                    embed_button.add_field(name="attend members", value=" ".join(attend_members), inline=False)
+            embed_button.set_footer()
+            await interaction.response.send_message(embed=embed_button)
+
+
+            data = {
+                "guild_ID": guild_ID,
+                "title": title,
+                "voice_channel_ID": voice_channel_ID,
+                "role_ID": role_ID,
+                "time": [year, month, day, hour, minute],
+                "absent_members": absent_members,
+                "attend_membets": attend_members
+            }
             
 
         button1.callback = cancel
         button2.callback = close
+        button3.callback = roll_call
 
         message = await interaction.original_response()
         message_id = message.id
@@ -141,7 +209,7 @@ class Meet(Cog_Extension):
 
         with open("before_meeting.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
-        jdata[meeting_id] = data
+        jdata[meeting_ID] = data
         with open("before_meeting.json", mode="w", encoding="utf8") as jfile:
             json.dump(jdata, jfile, indent=4)
 
@@ -166,13 +234,13 @@ class Meet(Cog_Extension):
             return
 
     @app_commands.command(name="get_meeting_record_json", description="get meeting record json")
-    @app_commands.describe(meeting_id="You can find this at the embed footer")
-    async def get_meeting_record_json(self, interaction: discord.Interaction, meeting_id: str):
+    @app_commands.describe(meeting_ID="You can find this at the embed footer")
+    async def get_meeting_record_json(self, interaction: discord.Interaction, meeting_ID: str):
         with open("meeting_save.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
         try:
-            data = jdata[str(meeting_id)]
-            filename = f"meeting_record_{meeting_id}.json"
+            data = jdata[str(meeting_ID)]
+            filename = f"meeting_record_{meeting_ID}.json"
             with open(filename, "w") as jfile:
                 json.dump(data, jfile, indent=4)
             await interaction.response.send_message(f"chack the file below.", ephemeral=False)
