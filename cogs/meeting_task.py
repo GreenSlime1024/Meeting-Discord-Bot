@@ -35,15 +35,17 @@ class MeetingTask(Cog_Extension):
             with open("before_meeting.json", mode="r", encoding="utf8") as jfile:
                 jdata = json.load(jfile)
 
-            year = jdata[i]["time"][0]
-            month = jdata[i]["time"][1]
-            day = jdata[i]["time"][2]
-            hour = jdata[i]["time"][3]
-            minute = jdata[i]["time"][4]
+            year = jdata[i]["start_time"][0]
+            month = jdata[i]["start_time"][1]
+            day = jdata[i]["start_time"][2]
+            hour = jdata[i]["start_time"][3]
+            minute = jdata[i]["start_time"][4]
 
             now_time_UTC = datetime.datetime.now(datetime.timezone.utc).replace(second=0, microsecond=0)
             meeting_time = pytz.timezone(timezone).localize(datetime.datetime(year, month, day, hour, minute))
             meeting_time_UTC = meeting_time.astimezone(pytz.utc)
+            print('now_time_UTC: ', now_time_UTC)
+            print('meeting_time_UTC: ', meeting_time_UTC)
 
             if meeting_time_UTC == now_time_UTC:
                 meeting_data = jdata[i]

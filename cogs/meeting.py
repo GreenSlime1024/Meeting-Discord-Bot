@@ -30,9 +30,8 @@ class Meet(Cog_Extension):
 
         with open("before_meeting.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
-        now_time = datetime.datetime.utcnow().replace(second=0, microsecond=0)
-        now_time_UTC = pytz.timezone('UTC').localize(now_time)
-        guild_time = now_time.astimezone(pytz.timezone(timezone))
+        now_time_UTC = datetime.datetime.now(datetime.timezone.utc).replace(second=0, microsecond=0)
+        guild_time = now_time_UTC.astimezone(pytz.timezone(timezone))
 
         if day == None:
             day = guild_time.day
@@ -66,7 +65,7 @@ class Meet(Cog_Extension):
 
         embed_set = discord.Embed(title=title, color=0x66ff47)
         embed_set.add_field(name="voice channel", value=f"{voice_channel.mention}", inline=False)
-        embed_set.add_field(name="meeting time", value=f"<t:{timestamp}:F> <t:{timestamp}:R>", inline=False)
+        embed_set.add_field(name="start time", value=f"<t:{timestamp}:F> <t:{timestamp}:R>", inline=False)
         embed_set.set_footer(text=meeting_ID)
         if role_ID == None:
             embed_set.add_field(name="role", value="@everyone", inline=False)
@@ -76,7 +75,7 @@ class Meet(Cog_Extension):
         button1 = Button(label="cancel", style=discord.ButtonStyle.red)
         button2 = Button(label="close", style=discord.ButtonStyle.red)
         button3 = Button(label="roll call", style=discord.ButtonStyle.blurple)
-        view = View()
+        view = View(timeout=604800)
         view.add_item(button1)
         view.add_item(button2)
         view.add_item(button3)
@@ -88,11 +87,10 @@ class Meet(Cog_Extension):
                 jdata = json.load(jfile)
             try:
                 data = jdata[meeting_ID]
-                
-            except KeyError as e:
+                del jdata[meeting_ID]    
+            except KeyError:
                 await error.error_message(interaction=interaction, error="The meeting is not pending.")
                 return
-            del jdata[meeting_ID]
             with open("before_meeting.json", mode="w", encoding="utf8") as jfile:
                 json.dump(jdata, jfile, indent=4)
             await interaction.response.send_message("canceled.")
@@ -109,10 +107,10 @@ class Meet(Cog_Extension):
                 jdata = json.load(jfile)
             try:
                 data = jdata[meeting_ID]
+                del jdata[meeting_ID]
             except KeyError:
                 await error.error_message(interaction=interaction, error="The meeting is not in progress.")
                 return
-            del jdata[meeting_ID]
             with open("durning_meeting.json", mode="w", encoding="utf8") as jfile:
                 json.dump(jdata, jfile, indent=4)
             
@@ -128,22 +126,32 @@ class Meet(Cog_Extension):
             attend_members = []
             with open("durning_meeting.json", mode="r", encoding="utf8") as jfile:
                 jdata = json.load(jfile)
-            guild_ID = jdata[meeting_ID]["guild_ID"]
+            try:
+                guild_ID = jdata[meeting_ID]["guild_ID"]
+            
+                title = jdata[meeting_ID]["title"]
+                voice_channel_ID = jdata[meeting_ID]["voice_channel_ID"]          
+                role_ID = jdata[meeting_ID]["role_ID"]            
+                text_channel_ID = jdata[meeting_ID]["text_channel_ID"]
+                thread_ID = jdata[meeting_ID]["thread_ID"]
+            except KeyError:
+                await error.error_message(interaction=interaction, error="The meeting is not in progress.")
+                return
             guild = self.bot.get_guild(guild_ID)
-            title = jdata[meeting_ID]["title"]
-            voice_channel_ID = jdata[meeting_ID]["voice_channel_ID"]
             voice_channel = self.bot.get_channel(voice_channel_ID)
-            role_ID = jdata[meeting_ID]["role_ID"]
-            guild = self.bot.get_guild(guild_ID)
             timestamp = int(meeting_time_UTC.timestamp())
+            text_channel = self.bot.get_channel(text_channel_ID)
+            thread = text_channel.get_thread(thread_ID)
+            
+
             if role_ID == None:
                 role = None
             else:
                 role = guild.get_role(role_ID)
 
-            embed_button = discord.Embed(title=title, color=0x474eff)
+            embed_button = discord.Embed(title=title, color=0x5865f2)
             embed_button.add_field(name="voice channel", value=f"{voice_channel.mention}", inline=False)
-            embed_button.add_field(name="meeting time", value=f"<t:{timestamp}:F> <t:{timestamp}:R>", inline=False)
+            embed_button.add_field(name="start time", value=f"<t:{timestamp}:F> <t:{timestamp}:R>", inline=False)
 
             if role == None:
                 embed_button.add_field(name="role", value="@everyone", inline=False)
@@ -176,18 +184,24 @@ class Meet(Cog_Extension):
                 else:
                     embed_button.add_field(name="attend members", value=" ".join(attend_members), inline=False)
             embed_button.set_footer()
-            await interaction.response.send_message(embed=embed_button)
+            await thread.send(embed=embed_button)
 
 
-            data = {
+            """data = {
                 "guild_ID": guild_ID,
                 "title": title,
                 "voice_channel_ID": voice_channel_ID,
                 "role_ID": role_ID,
-                "time": [year, month, day, hour, minute],
+                "start_time": [year, month, day, hour, minute],
                 "absent_members": absent_members,
                 "attend_membets": attend_members
             }
+
+            filename = f"meeting_record_{meeting_ID}.json"
+            with open(filename, "w") as jfile:
+                json.dump(data, jfile, indent=4)
+            #await meeting_notify_channel.send(file=discord.File(filename))
+            os.remove(filename)"""
             
 
         button1.callback = cancel
@@ -197,15 +211,20 @@ class Meet(Cog_Extension):
         message = await interaction.original_response()
         message_id = message.id
         text_channel_ID = message.channel.id
+        thread = await message.create_thread(name="meeting info")
+        thread_ID = thread.id
         data = {
             "guild_ID": guild_ID,
             "title": title,
             "voice_channel_ID": voice_channel_ID,
             "text_channel_ID": text_channel_ID,
             "message_ID": message_id,
+            "thread_ID": thread_ID,
             "role_ID": role_ID,
-            "time": [year, month, day, hour, minute]
+            "start_time": [year, month, day, hour, minute]
         }
+        
+        
 
         with open("before_meeting.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
@@ -216,7 +235,7 @@ class Meet(Cog_Extension):
 
 
     @app_commands.command(name="set_server_settings", description="set server settings")
-    @app_commands.describe(meeting_notify_channel="Text channel where the meeting notification will be sent", timezone="your timezone")
+    @app_commands.describe(timezone="your timezone")
     async def set_server_settings(self, interaction: discord.Interaction, meeting_notify_channel: discord.TextChannel, timezone: str):
         data = {
             "meeting_notify_channel_id": meeting_notify_channel.id,
