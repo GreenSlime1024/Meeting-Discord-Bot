@@ -139,7 +139,6 @@ class Meet(Cog_Extension):
                 return
             guild = self.bot.get_guild(guild_ID)
             voice_channel = self.bot.get_channel(voice_channel_ID)
-            timestamp = int(meeting_time_UTC.timestamp())
             text_channel = self.bot.get_channel(text_channel_ID)
             thread = text_channel.get_thread(thread_ID)
             
@@ -150,17 +149,13 @@ class Meet(Cog_Extension):
                 role = guild.get_role(role_ID)
 
             embed_button = discord.Embed(title=title, color=0x5865f2)
-            embed_button.add_field(name="voice channel", value=f"{voice_channel.mention}", inline=False)
-            embed_button.add_field(name="start time", value=f"<t:{timestamp}:F> <t:{timestamp}:R>", inline=False)
+            embed_button.set_footer(text=meeting_ID)
 
             if role == None:
-                embed_button.add_field(name="role", value="@everyone", inline=False)
                 for member in guild.members:
                     if member not in voice_channel.members:
                         absent_members.append(member.mention)
-
             else:
-                embed_button.add_field(name="role", value=role.mention, inline=False)
                 for member in role.members:
                     if member not in voice_channel.members:
                         absent_members.append(member.mention)
@@ -183,16 +178,8 @@ class Meet(Cog_Extension):
                     embed_button.add_field(name="attend members", value="None", inline=False)
                 else:
                     embed_button.add_field(name="attend members", value=" ".join(attend_members), inline=False)
-            embed_button.set_footer()
-            await thread.send(embed=embed_button)
-
-
-            """data = {
-                "guild_ID": guild_ID,
-                "title": title,
-                "voice_channel_ID": voice_channel_ID,
-                "role_ID": role_ID,
-                "start_time": [year, month, day, hour, minute],
+            
+            data = {
                 "absent_members": absent_members,
                 "attend_membets": attend_members
             }
@@ -200,9 +187,9 @@ class Meet(Cog_Extension):
             filename = f"meeting_record_{meeting_ID}.json"
             with open(filename, "w") as jfile:
                 json.dump(data, jfile, indent=4)
-            #await meeting_notify_channel.send(file=discord.File(filename))
-            os.remove(filename)"""
-            
+            message = await thread.send(embed=embed_button)
+            await message.add_files(discord.File(filename, filename=filename))
+            os.remove(filename)
 
         button1.callback = cancel
         button2.callback = close
