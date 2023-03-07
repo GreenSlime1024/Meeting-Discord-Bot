@@ -190,6 +190,7 @@ class Meet(Cog_Extension):
             message = await thread.send(embed=embed_button)
             await message.add_files(discord.File(filename, filename=filename))
             os.remove(filename)
+            await interaction.response.send_message("Please check the thread.", ephemeral=True)
 
         button1.callback = cancel
         button2.callback = close
@@ -208,27 +209,48 @@ class Meet(Cog_Extension):
             "message_ID": message_id,
             "thread_ID": thread_ID,
             "role_ID": role_ID,
-            "start_time": [year, month, day, hour, minute]
+            "start_time": (year, month, day, hour, minute)
         }
-        
-        
-
         with open("before_meeting.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
         jdata[meeting_ID] = data
         with open("before_meeting.json", mode="w", encoding="utf8") as jfile:
             json.dump(jdata, jfile, indent=4)
 
-
-
     @app_commands.command(name="set_server_settings", description="set server settings")
-    @app_commands.describe(timezone="your timezone")
-    async def set_server_settings(self, interaction: discord.Interaction, meeting_notify_channel: discord.TextChannel, timezone: str):
+    @app_commands.describe(timezone="choose your timezone")
+    @app_commands.choices(timezone=[
+        discord.app_commands.Choice(name="GMT+0", value="Etc/GMT-0"),
+        discord.app_commands.Choice(name="GMT+1", value="Etc/GMT-1"),
+        discord.app_commands.Choice(name="GMT+2", value="Etc/GMT-2"),
+        discord.app_commands.Choice(name="GMT+3", value="Etc/GMT-3"),
+        discord.app_commands.Choice(name="GMT+4", value="Etc/GMT-4"),
+        discord.app_commands.Choice(name="GMT+5", value="Etc/GMT-5"),
+        discord.app_commands.Choice(name="GMT+6", value="Etc/GMT-6"),
+        discord.app_commands.Choice(name="GMT+7", value="Etc/GMT-7"),
+        discord.app_commands.Choice(name="GMT+8", value="Etc/GMT-8"),
+        discord.app_commands.Choice(name="GMT+9", value="Etc/GMT-9"),
+        discord.app_commands.Choice(name="GMT+10", value="Etc/GMT-10"),
+        discord.app_commands.Choice(name="GMT+11", value="Etc/GMT-11"),
+        discord.app_commands.Choice(name="GMT+12", value="Etc/GMT-12"),
+        discord.app_commands.Choice(name="GMT-11", value="Etc/GMT+11"),
+        discord.app_commands.Choice(name="GMT-10", value="Etc/GMT+10"),
+        discord.app_commands.Choice(name="GMT-9", value="Etc/GMT+9"),
+        discord.app_commands.Choice(name="GMT-8", value="Etc/GMT+8"),
+        discord.app_commands.Choice(name="GMT-7", value="Etc/GMT+7"),
+        discord.app_commands.Choice(name="GMT-6", value="Etc/GMT+6"),
+        discord.app_commands.Choice(name="GMT-5", value="Etc/GMT+5"),
+        discord.app_commands.Choice(name="GMT-4", value="Etc/GMT+4"),
+        discord.app_commands.Choice(name="GMT-3", value="Etc/GMT+3"),
+        discord.app_commands.Choice(name="GMT-2", value="Etc/GMT+2"),
+        discord.app_commands.Choice(name="GMT-1", value="Etc/GMT+1"),
+    ])
+    async def set_server_settings(self, interaction: discord.Interaction, timezone: discord.app_commands.Choice[str]):
         data = {
-            "meeting_notify_channel_id": meeting_notify_channel.id,
-            "timezone": timezone
+            "timezone": timezone.value
         }
-        if timezone in pytz.all_timezones:
+
+        if timezone.value in pytz.all_timezones:
             with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
                 jdata = json.load(jfile)
             jdata[str(interaction.guild.id)] = data
@@ -238,23 +260,6 @@ class Meet(Cog_Extension):
         else:
             await error.error_message(interaction=interaction, error="timezone is not correct", description="Time zone you typed is not correct\nPlease use </timezone-names:1072440724118847556> to check.")
             return
-
-    @app_commands.command(name="get_meeting_record_json", description="get meeting record json")
-    @app_commands.describe(meeting_ID="You can find this at the embed footer")
-    async def get_meeting_record_json(self, interaction: discord.Interaction, meeting_ID: str):
-        with open("meeting_save.json", mode="r", encoding="utf8") as jfile:
-            jdata = json.load(jfile)
-        try:
-            data = jdata[str(meeting_ID)]
-            filename = f"meeting_record_{meeting_ID}.json"
-            with open(filename, "w") as jfile:
-                json.dump(data, jfile, indent=4)
-            await interaction.response.send_message(f"chack the file below.", ephemeral=False)
-            message = await interaction.original_response()
-            await message.add_files(discord.File(filename, filename=filename))
-            os.remove(filename)
-        except KeyError:
-            await error.error_message(interaction=interaction, error="Meeting is not found")
         
     @app_commands.command(name="timezone-names", description="show all the timezone names")
     async def guild(self, interaction: discord.Interaction):
