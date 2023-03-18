@@ -20,41 +20,41 @@ class MeetingTask(Cog_Extension):
 
     @tasks.loop(seconds=1)
     async def StartCheck(self):
-        with open("before_meeting.json", mode="r", encoding="utf8") as jfile:
+        now_time_UTC = datetime.datetime.now(datetime.timezone.utc).replace(second=0, microsecond=0)
+        timestamp_UTC = int(now_time_UTC.timestamp())
+        with open("meeting.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
 
-        for i in jdata.keys():
-            with open("before_meeting.json", mode="r", encoding="utf8") as jfile:
-                jdata = json.load(jfile)
+        if str(timestamp_UTC) not in jdata:
+            return
         
-            guild_ID = jdata[i]["guild_ID"]
-            with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
-                jdata = json.load(jfile)
-            timezone = jdata[str(guild_ID)]["timezone"]
-
-            with open("before_meeting.json", mode="r", encoding="utf8") as jfile:
-                jdata = json.load(jfile)
-
-            year, month, day, hour, minute = jdata[i]["start_time"]
-
-            now_time_UTC = datetime.datetime.now(datetime.timezone.utc).replace(second=0, microsecond=0)
-            meeting_time = pytz.timezone(timezone).localize(datetime.datetime(year, month, day, hour, minute))
-            meeting_time_UTC = meeting_time.astimezone(pytz.utc)
-
-            if meeting_time_UTC == now_time_UTC:
-                meeting_data = jdata[i]
-
-                with open("durning_meeting.json", mode="r", encoding="utf8") as jfile:
-                    jdata = json.load(jfile)
-                jdata[i] = meeting_data
-                with open("durning_meeting.json", mode="w", encoding="utf8") as jfile:
-                    json.dump(jdata, jfile, indent=4)
-
-                with open("before_meeting.json", mode="r", encoding="utf8") as jfile:
-                    jdata = json.load(jfile)
-                del jdata[i]
-                with open("before_meeting.json", mode="w", encoding="utf8") as jfile:
+        # open meeting
+        for data in jdata[str(timestamp_UTC)]:
+            if data["status"] == True:
+                index = jdata[str(timestamp_UTC)].index(data)
+                # meeting_ID = data["meeting_ID"]
+                guild_ID = data["guild_ID"]
+                title = data["title"]
+                # text_channel_ID = data["text_channel_ID"]
+                # message_ID = data["message_ID"]
+                # thread_ID = data["thread_ID"]
+                # role_ID = data["role_ID"]
+                # start_time = data["start_time"]
+                guild = self.bot.get_guild(guild_ID)
+                
+                with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
+                    guilds_info_data = json.load(jfile)
+                category_ID = guilds_info_data[str(guild_ID)]["category_ID"]
+                category = self.bot.get_channel(category_ID)
+                voice_channel = await guild.create_voice_channel(name=title, category=category)
+                voice_channel_ID = voice_channel.id
+                data["status"] = False
+                data["voice_channel_ID"] = voice_channel_ID
+                
+                jdata[str(timestamp_UTC)][index] = data
+                with open("meeting.json", mode="w", encoding="utf8") as jfile:
                     json.dump(jdata, jfile, indent=4)
 
 async def setup(bot):
     await bot.add_cog(MeetingTask(bot))
+    
