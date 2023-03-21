@@ -48,6 +48,13 @@ class MeetingTask(Cog_Extension):
                 category = self.bot.get_channel(category_ID)
                 voice_channel = await guild.create_voice_channel(name=title, category=category)
                 voice_channel_ID = voice_channel.id
+                message_ID = data["message_ID"]
+                text_channel_ID = data["text_channel_ID"]
+                text_channel = self.bot.get_channel(text_channel_ID)
+                message = await text_channel.fetch_message(message_ID)
+                message.embeds[0].add_field(name="Voice Channel", value=f"<#{voice_channel_ID}>")
+                message.embeds[0].color = discord.Color.green()
+                await message.edit(embed=message.embeds[0])
                 data["status"] = False
                 data["voice_channel_ID"] = voice_channel_ID
                 

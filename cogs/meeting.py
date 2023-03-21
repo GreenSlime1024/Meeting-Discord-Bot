@@ -62,7 +62,7 @@ class Meeting(Cog_Extension):
         timestamp = int(meeting_time.timestamp())
         timestamp_UTC = int(meeting_time_UTC.timestamp())
 
-        embed_set = discord.Embed(title=title, color=0x66ff47)
+        embed_set = discord.Embed(title=title, color=discord.Color.yellow())
         embed_set.add_field(name="start time", value=f"<t:{timestamp}:F> <t:{timestamp}:R>", inline=False)
         embed_set.set_footer(text=meeting_ID)
         if role_ID == None:
@@ -86,6 +86,8 @@ class Meeting(Cog_Extension):
                         lenth = len(jdata[str(timestamp_UTC)])
                         index = jdata[str(timestamp_UTC)].index(data)
                         status = data["status"]
+                        voice_channel_ID = data["voice_channel_ID"]
+                        voice_channel = self.bot.get_channel(voice_channel_ID)
                         if lenth == 1:
                             del jdata[str(timestamp_UTC)]
                         else:
@@ -95,9 +97,16 @@ class Meeting(Cog_Extension):
                         if status:
                             await interaction.response.send_message("canceled.")
                         else:
+                            message_ID = data["message_ID"]
+                            text_channel_ID = data["text_channel_ID"]
+                            text_channel = self.bot.get_channel(text_channel_ID)
+                            message = await text_channel.fetch_message(message_ID)
+                            message.embeds[0].color = discord.Color.red()
+                            await message.edit(embed=message.embeds[0])
+                            await voice_channel.delete()
                             await interaction.response.send_message("closed.")
             except KeyError:
-                await interaction.response.send_message("meeting is not exist.")
+                await interaction.response.send_message("meeting is not exist.", ephemeral=True)
                 return
 
         async def roll_call(interaction):
