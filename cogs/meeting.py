@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord.ext import tasks
 from core.classes import Cog_Extension
 from discord import app_commands
 import json
@@ -8,6 +9,7 @@ import pytz
 import os
 from core.error import error
 import uuid
+import asyncio
 from discord.ui import Button, View
 
 class Meeting(Cog_Extension):
@@ -45,7 +47,7 @@ class Meeting(Cog_Extension):
             await error.error_message(interaction=interaction, error=e, description="Please check if the time you typed is correct.")
         meeting_time_UTC = meeting_time.astimezone(pytz.utc)
         
-        if meeting_time_UTC < now_time_UTC:
+        if meeting_time_UTC <= now_time_UTC:
             await error.error_message(interaction=interaction, error="time had expired")
             return
  
@@ -70,7 +72,7 @@ class Meeting(Cog_Extension):
         else:
             embed_set.add_field(name="role", value=role.mention, inline=False)
 
-        button1 = Button(label="cancel/close", style=discord.ButtonStyle.red)
+        button1 = Button(label="close", style=discord.ButtonStyle.red)
         button2 = Button(label="roll call", style=discord.ButtonStyle.blurple)
         view = View(timeout=604800)
         view.add_item(button1)
@@ -78,36 +80,8 @@ class Meeting(Cog_Extension):
         await interaction.response.send_message(embed=embed_set, view=view)
 
         async def remove_meeting(interaction):
-            with open("meeting.json", mode="r", encoding="utf8") as jfile:
-                jdata = json.load(jfile)
-            try:
-                for data in jdata[str(timestamp_UTC)]:
-                    if data["meeting_ID"] == meeting_ID:
-                        lenth = len(jdata[str(timestamp_UTC)])
-                        index = jdata[str(timestamp_UTC)].index(data)
-                        status = data["status"]
-                        voice_channel_ID = data["voice_channel_ID"]
-                        voice_channel = self.bot.get_channel(voice_channel_ID)
-                        if lenth == 1:
-                            del jdata[str(timestamp_UTC)]
-                        else:
-                            del jdata[str(timestamp_UTC)][index]
-                        with open("meeting.json", mode="w", encoding="utf8") as jfile:
-                            json.dump(jdata, jfile, indent=4)
-                        if status:
-                            await interaction.response.send_message("canceled.")
-                        else:
-                            message_ID = data["message_ID"]
-                            text_channel_ID = data["text_channel_ID"]
-                            text_channel = self.bot.get_channel(text_channel_ID)
-                            message = await text_channel.fetch_message(message_ID)
-                            message.embeds[0].color = discord.Color.red()
-                            await message.edit(embed=message.embeds[0])
-                            await voice_channel.delete()
-                            await interaction.response.send_message("closed.")
-            except KeyError:
-                await interaction.response.send_message("meeting is not exist.", ephemeral=True)
-                return
+            MeetingTask_instance = MeetingTask(self.bot, False)
+            await MeetingTask_instance.close_meeting(interaction, meeting_ID, timestamp_UTC)
 
         async def roll_call(interaction):
             absent_members = []
@@ -203,7 +177,6 @@ class Meeting(Cog_Extension):
             "thread_ID": thread_ID,
             "role_ID": role_ID,
             "start_time": (year, month, day, hour, minute),
-            "status": True
         }
 
         data.append(meeting_data)
@@ -239,6 +212,7 @@ class Meeting(Cog_Extension):
         discord.app_commands.Choice(name="GMT-2", value="Etc/GMT+2"),
         discord.app_commands.Choice(name="GMT-1", value="Etc/GMT+1"),
     ])
+    
     async def set_server_settings(self, interaction: discord.Interaction, timezone: discord.app_commands.Choice[str], category: discord.CategoryChannel):
         data = {
             "timezone": timezone.value,
@@ -256,5 +230,112 @@ class Meeting(Cog_Extension):
             await error.error_message(interaction=interaction, error="timezone is not correct", description="Time zone you typed is not correct\nPlease use </timezone-names:1072440724118847556> to check.")
             return
 
+class MeetingTask(Cog_Extension):
+    @commands.Cog.listener()
+    async def on_ready(self):
+        print("meeting_task cog loaded.")
+
+    def __init__(self, bot, task=True):
+        super().__init__(bot)
+        if task == True:
+            self.StartCheck.start()
+
+    def get_self(self):
+        return self
+    
+    close_events = {}
+
+    async def run_meeting(self, data, timestamp_UTC): # 跑一個 meeting
+        with open("meeting.json", mode="r", encoding="utf8") as jfile:
+            jdata = json.load(jfile)
+        index = jdata[str(timestamp_UTC)].index(data)
+        meeting_ID = data["meeting_ID"]
+        guild_ID = data["guild_ID"]
+        title = data["title"]
+        # text_channel_ID = data["text_channel_ID"]
+        # message_ID = data["message_ID"]
+        # thread_ID = data["thread_ID"]
+        # role_ID = data["role_ID"]
+        # start_time = data["start_time"]
+        guild = self.bot.get_guild(guild_ID)
+        
+        with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
+            guilds_info_data = json.load(jfile)
+        category_ID = guilds_info_data[str(guild_ID)]["category_ID"]
+        category = self.bot.get_channel(category_ID)
+        voice_channel = await guild.create_voice_channel(name=title, category=category)
+        voice_channel_ID = voice_channel.id
+        message_ID = data["message_ID"]
+        text_channel_ID = data["text_channel_ID"]
+        text_channel = self.bot.get_channel(text_channel_ID)
+        message = await text_channel.fetch_message(message_ID)
+        message.embeds[0].add_field(name="Voice Channel", value=f"<#{voice_channel_ID}>")
+        message.embeds[0].color = discord.Color.green()
+        await message.edit(embed=message.embeds[0])
+        data["voice_channel_ID"] = voice_channel_ID
+        
+        with open("meeting.json", mode="r", encoding="utf8") as jfile:
+            jdata = json.load(jfile)
+        jdata[str(timestamp_UTC)][index] = data
+        with open("meeting.json", mode="w", encoding="utf8") as jfile:
+            json.dump(jdata, jfile, indent=4)
+        print(f"meeting {meeting_ID} started")
+        self.close_events[meeting_ID] = asyncio.Event()
+        await self.close_events[meeting_ID].wait()
+        print(f"meeting {meeting_ID} closed")
+        
+    async def run_all_meetings_in_list(self, timestamp_UTC):
+        '''
+        同時跑所有的 meeting
+        '''
+        running_meetings = []
+        with open("meeting.json", mode="r", encoding="utf8") as jfile:
+            jdata = json.load(jfile)
+        meeting_list = jdata[str(timestamp_UTC)]
+        for data in meeting_list:
+            running_meetings.append(self.run_meeting(data, timestamp_UTC)) # 先把所有的 meeting 開始跑，但不要在 for loop 裡面 await
+        await asyncio.gather(*running_meetings) # 全部一起 await
+
+    async def close_meeting(self, interaction, meeting_ID, timestamp_UTC):
+        with open("meeting.json", mode="r", encoding="utf8") as jfile:
+            jdata = json.load(jfile)
+        for data in jdata[str(timestamp_UTC)]:
+            if data["meeting_ID"] == meeting_ID:
+                if int(timestamp_UTC)<=int(datetime.datetime.now(datetime.timezone.utc).replace(second=0, microsecond=0).timestamp()):
+                    lenth = len(jdata[str(timestamp_UTC)])
+                    index = jdata[str(timestamp_UTC)].index(data)
+                    voice_channel_ID = data["voice_channel_ID"]
+                    voice_channel = self.bot.get_channel(voice_channel_ID)
+                    if lenth == 1:
+                        del jdata[str(timestamp_UTC)]
+                    else:
+                        del jdata[str(timestamp_UTC)][index]
+                    with open("meeting.json", mode="w", encoding="utf8") as jfile:
+                        json.dump(jdata, jfile, indent=4)
+                    message_ID = data["message_ID"]
+                    text_channel_ID = data["text_channel_ID"]
+                    text_channel = self.bot.get_channel(text_channel_ID)
+                    message = await text_channel.fetch_message(message_ID)
+                    message.embeds[0].color = discord.Color.red()
+                    button = message.components[0].components[0]
+                    button.disabled = True
+                    button.label = "Closed"
+                    await message.edit(embed=message.embeds[0], components=[interaction.message.components[0]])
+                    await voice_channel.delete()
+                    self.close_events[meeting_ID].set()
+                    await interaction.response.send_message("closed.", ephemeral=True)
+
+    @tasks.loop(seconds=1)
+    async def StartCheck(self):
+        now_time_UTC = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
+        if now_time_UTC.second == 0:
+            timestamp_UTC = int(now_time_UTC.replace(second=0).timestamp())
+            with open("meeting.json", mode="r", encoding="utf8") as jfile:
+                jdata = json.load(jfile)
+            if str(timestamp_UTC) not in jdata:
+                return
+            asyncio.create_task(self.run_all_meetings_in_list(timestamp_UTC))
+
 async def setup(bot):
     await bot.add_cog(Meeting(bot))
+    await bot.add_cog(MeetingTask(bot))
