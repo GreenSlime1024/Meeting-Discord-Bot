@@ -273,7 +273,6 @@ class MeetingTask(Cog_Extension):
         message.embeds[0].color = discord.Color.green()
         await message.edit(embed=message.embeds[0])
         data["voice_channel_ID"] = voice_channel_ID
-        
         with open("meeting.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
         jdata[str(timestamp_UTC)][index] = data
@@ -282,6 +281,26 @@ class MeetingTask(Cog_Extension):
         print(f"meeting {meeting_ID} started")
         self.close_events[meeting_ID] = asyncio.Event()
         await self.close_events[meeting_ID].wait()
+
+        with open("meeting.json", mode="r", encoding="utf8") as jfile:
+            jdata = json.load(jfile)
+        lenth = len(jdata[str(timestamp_UTC)])
+        index = jdata[str(timestamp_UTC)].index(data)
+        voice_channel_ID = data["voice_channel_ID"]
+        voice_channel = self.bot.get_channel(voice_channel_ID)
+        if lenth == 1:
+            del jdata[str(timestamp_UTC)]
+        else:
+            del jdata[str(timestamp_UTC)][index]
+        with open("meeting.json", mode="w", encoding="utf8") as jfile:
+            json.dump(jdata, jfile, indent=4)
+        message_ID = data["message_ID"]
+        text_channel_ID = data["text_channel_ID"]
+        text_channel = self.bot.get_channel(text_channel_ID)
+        message = await text_channel.fetch_message(message_ID)
+        message.embeds[0].color = discord.Color.red()
+        await message.edit(embed=message.embeds[0])
+        await voice_channel.delete()
         print(f"meeting {meeting_ID} closed")
         
     async def run_all_meetings_in_list(self, timestamp_UTC):
@@ -302,26 +321,6 @@ class MeetingTask(Cog_Extension):
         for data in jdata[str(timestamp_UTC)]:
             if data["meeting_ID"] == meeting_ID:
                 if int(timestamp_UTC)<=int(datetime.datetime.now(datetime.timezone.utc).replace(second=0, microsecond=0).timestamp()):
-                    lenth = len(jdata[str(timestamp_UTC)])
-                    index = jdata[str(timestamp_UTC)].index(data)
-                    voice_channel_ID = data["voice_channel_ID"]
-                    voice_channel = self.bot.get_channel(voice_channel_ID)
-                    if lenth == 1:
-                        del jdata[str(timestamp_UTC)]
-                    else:
-                        del jdata[str(timestamp_UTC)][index]
-                    with open("meeting.json", mode="w", encoding="utf8") as jfile:
-                        json.dump(jdata, jfile, indent=4)
-                    message_ID = data["message_ID"]
-                    text_channel_ID = data["text_channel_ID"]
-                    text_channel = self.bot.get_channel(text_channel_ID)
-                    message = await text_channel.fetch_message(message_ID)
-                    message.embeds[0].color = discord.Color.red()
-                    button = message.components[0].components[0]
-                    button.disabled = True
-                    button.label = "Closed"
-                    await message.edit(embed=message.embeds[0], components=[interaction.message.components[0]])
-                    await voice_channel.delete()
                     self.close_events[meeting_ID].set()
                     await interaction.response.send_message("closed.", ephemeral=True)
 
