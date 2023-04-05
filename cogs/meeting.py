@@ -10,16 +10,18 @@ import os
 from core.error import error
 import uuid
 import asyncio
-from discord.ui import Button, View
+from discord.ui import Button, Select, View
 
 class Meeting(Cog_Extension):
     @commands.Cog.listener()
     async def on_ready(self):
         print("meeting cog loaded.")
 
+    # discord set meeting command
     @app_commands.command(name="set_meeting", description="set necessary info about the server")
     @app_commands.describe(title="title of the meeting", hour="hour that meeting will starts at (24-hour)", minute="minute that meeting will starts at", day="day that meeting will starts at", month="month that meeting will starts at", year="year that meeting will starts at", role="members of the role that are asked to join the meeting")
     async def set_meeting(self, interaction: discord.Interaction, title: str, hour: int, minute: int, role: discord.Role = None, day: int = None, month: int = None, year: int = None):
+        # check if the user has set server settings
         with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
         guild_ID = interaction.guild.id
@@ -28,7 +30,8 @@ class Meeting(Cog_Extension):
         except KeyError:
             await error.error_message(interaction=interaction, error="guild setting not found", description="You haven't set server settings.\nPlease use </set_server_settings:1072440724118847554> to set.")
             return
-
+        
+        # auto fill the time
         with open("meeting.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
         now_time_UTC = datetime.datetime.now(datetime.timezone.utc).replace(second=0, microsecond=0)
@@ -41,6 +44,7 @@ class Meeting(Cog_Extension):
         if year == None:
             year = guild_time.year
         
+        # check if the time user typed is correct
         try:
             meeting_time = pytz.timezone(timezone).localize(datetime.datetime(year, month, day, hour, minute))
         except ValueError as e:
@@ -50,7 +54,7 @@ class Meeting(Cog_Extension):
         if meeting_time_UTC <= now_time_UTC:
             await error.error_message(interaction=interaction, error="time had expired")
             return
- 
+        
         meeting_ID = str(uuid.uuid4())
 
         if role == None:
@@ -64,6 +68,7 @@ class Meeting(Cog_Extension):
         timestamp = int(meeting_time.timestamp())
         timestamp_UTC = int(meeting_time_UTC.timestamp())
 
+        # create embed
         embed_set = discord.Embed(title=title, color=discord.Color.yellow())
         embed_set.add_field(name="start time", value=f"<t:{timestamp}:F> <t:{timestamp}:R>", inline=False)
         embed_set.set_footer(text=meeting_ID)
@@ -72,6 +77,7 @@ class Meeting(Cog_Extension):
         else:
             embed_set.add_field(name="role", value=role.mention, inline=False)
 
+        # create buttons
         button1 = Button(label="close", style=discord.ButtonStyle.red)
         button2 = Button(label="roll call", style=discord.ButtonStyle.blurple)
         view = View(timeout=604800)
@@ -156,6 +162,7 @@ class Meeting(Cog_Extension):
         button1.callback = remove_meeting
         button2.callback = roll_call
 
+        # save meeting data
         message = await interaction.original_response()
         message_id = message.id
         text_channel_ID = message.channel.id
@@ -218,17 +225,13 @@ class Meeting(Cog_Extension):
             "timezone": timezone.value,
             "category_ID": category.id
         }
+        with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
+            jdata = json.load(jfile)
+        jdata[str(interaction.guild.id)] = data
+        with open("guilds_info.json", mode="w", encoding="utf8") as jfile:
+            json.dump(jdata, jfile, indent=4)
+        await interaction.response.send_message(f"guild info set.", ephemeral=False)
 
-        if timezone.value in pytz.all_timezones:
-            with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
-                jdata = json.load(jfile)
-            jdata[str(interaction.guild.id)] = data
-            with open("guilds_info.json", mode="w", encoding="utf8") as jfile:
-                json.dump(jdata, jfile, indent=4)
-            await interaction.response.send_message(f"guild info set.", ephemeral=False)
-        else:
-            await error.error_message(interaction=interaction, error="timezone is not correct", description="Time zone you typed is not correct\nPlease use </timezone-names:1072440724118847556> to check.")
-            return
 
 class MeetingTask(Cog_Extension):
     @commands.Cog.listener()
@@ -245,7 +248,9 @@ class MeetingTask(Cog_Extension):
     
     close_events = {}
 
-    async def run_meeting(self, data, timestamp_UTC): # 跑一個 meeting
+    # 跑一個 meeting
+    async def run_meeting(self, data, timestamp_UTC):
+        #open meeting
         with open("meeting.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
         index = jdata[str(timestamp_UTC)].index(data)
@@ -271,6 +276,7 @@ class MeetingTask(Cog_Extension):
         message = await text_channel.fetch_message(message_ID)
         message.embeds[0].add_field(name="Voice Channel", value=f"<#{voice_channel_ID}>")
         message.embeds[0].color = discord.Color.green()
+        print(message.components[0])
         await message.edit(embed=message.embeds[0])
         data["voice_channel_ID"] = voice_channel_ID
         with open("meeting.json", mode="r", encoding="utf8") as jfile:
@@ -282,6 +288,7 @@ class MeetingTask(Cog_Extension):
         self.close_events[meeting_ID] = asyncio.Event()
         await self.close_events[meeting_ID].wait()
 
+        #close meeting
         with open("meeting.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
         lenth = len(jdata[str(timestamp_UTC)])
@@ -299,14 +306,13 @@ class MeetingTask(Cog_Extension):
         text_channel = self.bot.get_channel(text_channel_ID)
         message = await text_channel.fetch_message(message_ID)
         message.embeds[0].color = discord.Color.red()
+        
         await message.edit(embed=message.embeds[0])
         await voice_channel.delete()
         print(f"meeting {meeting_ID} closed")
-        
+
+    # 跑一個時間點的所有 meeting  
     async def run_all_meetings_in_list(self, timestamp_UTC):
-        '''
-        同時跑所有的 meeting
-        '''
         running_meetings = []
         with open("meeting.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
@@ -324,6 +330,7 @@ class MeetingTask(Cog_Extension):
                     self.close_events[meeting_ID].set()
                     await interaction.response.send_message("closed.", ephemeral=True)
 
+    # 每秒檢查一次，如果是整點，就跑一次 run_all_meetings_in_list
     @tasks.loop(seconds=1)
     async def StartCheck(self):
         now_time_UTC = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
