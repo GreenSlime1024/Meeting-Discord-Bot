@@ -21,6 +21,11 @@ class Meeting(Cog_Extension):
     @app_commands.command(name="set_meeting", description="set necessary info about the server")
     @app_commands.describe(title="title of the meeting", hour="hour that meeting will starts at (24-hour)", minute="minute that meeting will starts at", day="day that meeting will starts at", month="month that meeting will starts at", year="year that meeting will starts at", role="members of the role that are asked to join the meeting")
     async def set_meeting(self, interaction: discord.Interaction, title: str, hour: int, minute: int, role: discord.Role = None, day: int = None, month: int = None, year: int = None):
+        # check if the channel type is correct
+        if interaction.channel.type != discord.ChannelType.text:
+            await error.error_message(interaction, error="wrong channel type", description="Please use this command in a text channel.")
+            return
+        
         # check if the user has set server settings
         with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
@@ -28,7 +33,7 @@ class Meeting(Cog_Extension):
         try:
             timezone = jdata[str(guild_ID)]["timezone"]
         except KeyError:
-            await error.error_message(interaction=interaction, error="guild setting not found", description="You haven't set server settings.\nPlease use </set_server_settings:1072440724118847554> to set.")
+            await error.error_message(interaction, error="guild setting not found", description="You haven't set server settings.\nPlease use </set_server_settings:1072440724118847554> to set.")
             return
         
         # auto fill the time
@@ -48,11 +53,11 @@ class Meeting(Cog_Extension):
         try:
             meeting_time = pytz.timezone(timezone).localize(datetime.datetime(year, month, day, hour, minute))
         except ValueError as e:
-            await error.error_message(interaction=interaction, error=e, description="Please check if the time you typed is correct.")
+            await error.error_message(interaction, error=e, description="Please check if the time you typed is correct.")
         meeting_time_UTC = meeting_time.astimezone(pytz.utc)
         
         if meeting_time_UTC <= now_time_UTC:
-            await error.error_message(interaction=interaction, error="time had expired")
+            await error.error_message(interaction, error="time had expired")
             return
         
         meeting_ID = str(uuid.uuid4())
@@ -78,32 +83,57 @@ class Meeting(Cog_Extension):
             embed_set.add_field(name="role", value=role.mention, inline=False)
 
         # create buttons
-        button1 = Button(label="close", style=discord.ButtonStyle.red)
-        button2 = Button(label="roll call", style=discord.ButtonStyle.blurple)
+        button1 = Button(label="cancle", style=discord.ButtonStyle.red)
+        button2 = Button(label="close", style=discord.ButtonStyle.red, disabled=True)
+        button3 = Button(label="roll call", style=discord.ButtonStyle.blurple, disabled=True)
         view = View(timeout=604800)
         view.add_item(button1)
         view.add_item(button2)
+        view.add_item(button3)
         await interaction.response.send_message(embed=embed_set, view=view)
 
-        async def remove_meeting(interaction):
+        async def cancle_meeing(interaction):
+            # disable the buttons
+            view.children[0].disabled = True
+            await interaction.message.edit(view=view)
+            # delete the meeting data
+            with open("meeting.json", mode="r", encoding="utf8") as jfile:
+                jdata = json.load(jfile)
+            del jdata[str(timestamp_UTC)]
+            with open("meeting.json", mode="w", encoding="utf8") as jfile:
+                json.dump(jdata, jfile, indent=4)
+            await interaction.message.delete()
+
+        async def close_meeting(interaction):
+            # disable the buttons
+            view.children[0].disabled = True
+            view.children[1].disabled = True
+            view.children[2].disabled = True
+            await interaction.message.edit(view=view)
+            # close the meeting
             MeetingTask_instance = MeetingTask(self.bot, False)
             await MeetingTask_instance.close_meeting(interaction, meeting_ID, timestamp_UTC)
-
+        
         async def roll_call(interaction):
             absent_members = []
             attend_members = []
             with open("meeting.json", mode="r", encoding="utf8") as jfile:
                 jdata = json.load(jfile)
             try:
-                for data in jdata[str(timestamp_UTC)]:
-                    if data["meeting_ID"] == meeting_ID:
-                        guild_ID = data["guild_ID"]
-                        text_channel_ID = data["text_channel_ID"]
-                        thread_ID = data["thread_ID"]
-                        voice_channel_ID = data["voice_channel_ID"]
+                jdata[str(timestamp_UTC)]
             except KeyError:
-                await error.error_message(interaction=interaction, error="meeting is not in progress.")
+                await error.error_message(interaction, error="meeting is not in progress.")
                 return
+            
+            # find the meeting data
+            for data in jdata[str(timestamp_UTC)]:
+                if data["meeting_ID"] != meeting_ID:
+                    return
+                
+            guild_ID = data["guild_ID"]
+            text_channel_ID = data["text_channel_ID"]
+            thread_ID = data["thread_ID"]
+            voice_channel_ID = data["voice_channel_ID"]
                            
             guild = self.bot.get_guild(guild_ID)
             text_channel = self.bot.get_channel(text_channel_ID)
@@ -151,7 +181,7 @@ class Meeting(Cog_Extension):
                 "attend_membets": attend_members
             }
 
-            filename = f"meeting_record_{meeting_ID}.json"
+            filename = f"{meeting_ID}.json"
             with open(filename, "w") as jfile:
                 json.dump(data, jfile, indent=4)
             message = await thread.send(embed=embed_button)
@@ -159,10 +189,11 @@ class Meeting(Cog_Extension):
             os.remove(filename)
             await interaction.response.send_message(f"Please check <#{thread_ID}>.", ephemeral=True)
 
-        button1.callback = remove_meeting
-        button2.callback = roll_call
+        button1.callback = cancle_meeing
+        button2.callback = close_meeting
+        button3.callback = roll_call
 
-        # save meeting data
+        # save the meeting data
         message = await interaction.original_response()
         message_id = message.id
         text_channel_ID = message.channel.id
@@ -250,33 +281,39 @@ class MeetingTask(Cog_Extension):
 
     # 跑一個 meeting
     async def run_meeting(self, data, timestamp_UTC):
-        #open meeting
+        #get data
         with open("meeting.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
         index = jdata[str(timestamp_UTC)].index(data)
         meeting_ID = data["meeting_ID"]
         guild_ID = data["guild_ID"]
         title = data["title"]
-        # text_channel_ID = data["text_channel_ID"]
-        # message_ID = data["message_ID"]
         # thread_ID = data["thread_ID"]
         # role_ID = data["role_ID"]
         # start_time = data["start_time"]
         guild = self.bot.get_guild(guild_ID)
-        
         with open("guilds_info.json", mode="r", encoding="utf8") as jfile:
             guilds_info_data = json.load(jfile)
-        category_ID = guilds_info_data[str(guild_ID)]["category_ID"]
-        category = self.bot.get_channel(category_ID)
-        voice_channel = await guild.create_voice_channel(name=title, category=category)
-        voice_channel_ID = voice_channel.id
         message_ID = data["message_ID"]
         text_channel_ID = data["text_channel_ID"]
         text_channel = self.bot.get_channel(text_channel_ID)
         message = await text_channel.fetch_message(message_ID)
+        # disable cancle button
+        # enable close, roll call button
+        view = View().from_message(message)
+        view.children[0].disabled = True
+        view.children[1].disabled = False
+        view.children[2].disabled = False
+        # buttons callback
+        
+        await message.edit(view=view)
+        # create voice channel
+        category_ID = guilds_info_data[str(guild_ID)]["category_ID"]
+        category = self.bot.get_channel(category_ID)
+        voice_channel = await guild.create_voice_channel(name=title, category=category)
+        voice_channel_ID = voice_channel.id
         message.embeds[0].add_field(name="Voice Channel", value=f"<#{voice_channel_ID}>")
         message.embeds[0].color = discord.Color.green()
-        print(message.components[0])
         await message.edit(embed=message.embeds[0])
         data["voice_channel_ID"] = voice_channel_ID
         with open("meeting.json", mode="r", encoding="utf8") as jfile:
