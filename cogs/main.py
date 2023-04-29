@@ -1,11 +1,12 @@
 import discord
 from discord.ext import commands
-from core.classes import Cog_Extension
 from discord import app_commands
-import pytz
 
 
-class Main(Cog_Extension):
+class Main(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        
     @commands.Cog.listener()
     async def on_ready(self):
         print("Main cog loaded.")

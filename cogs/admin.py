@@ -1,11 +1,13 @@
 import discord
 from discord.ext import commands
-from core.classes import Cog_Extension
 from discord import app_commands
 import os
 
 
-class Admin(Cog_Extension):
+class Admin(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
     @commands.Cog.listener()
     async def on_ready(self):
         print("Admin cog loaded.")

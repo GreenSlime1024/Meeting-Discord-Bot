@@ -1,16 +1,15 @@
 import discord
 from discord.ext import commands
-from core.classes import Cog_Extension
 import asyncio
 
 
-class Activity(Cog_Extension):
+class Activity(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print("Activity cog loaded.")
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, bot):
+        self.bot = bot
 
         async def activiy_task():
             await self.bot.wait_until_ready()
