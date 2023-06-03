@@ -1,11 +1,12 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
+from bot import MyBot
 import os
 
 
 class Admin(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: MyBot):
         self.bot = bot
 
     @commands.Cog.listener()
@@ -14,9 +15,15 @@ class Admin(commands.Cog):
 
     @commands.is_owner()
     @commands.command()
-    async def sync(self, ctx):
-        fmt = await ctx.bot.tree.sync()
-        await ctx.reply(f"synced {len(fmt)} commands")
+    async def syncl(self, ctx: commands.Context):
+        app_commands = await self.bot.tree.sync(guild=ctx.guild)
+        await ctx.reply(f"synced {len(app_commands)} commands")
+
+    @commands.is_owner()
+    @commands.command()
+    async def syncg(self, ctx: commands.Context):
+        app_commands = await self.bot.tree.sync()
+        await ctx.reply(f"synced {len(app_commands)} commands")
 
     @commands.is_owner()
     @app_commands.command(name="load",description="load extension")
