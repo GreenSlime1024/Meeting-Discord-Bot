@@ -14,8 +14,8 @@ class Activity(commands.Cog):
         async def activiy_task():
             await self.bot.wait_until_ready()
             activitys = ["運作平台: Eri24816 租的 server", "Made By GreenSlime1024", "還沒做好"]
-            for i in activitys:
-                await self.bot.change_presence(activity=discord.Game(i))
+            for activity in activitys:
+                await self.bot.change_presence(activity=discord.Game(activity))
                 await asyncio.sleep(15)
 
         self.bg_task = self.bot.loop.create_task(activiy_task())
