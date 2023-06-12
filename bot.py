@@ -8,15 +8,15 @@ import pymongo
 
 def create_require_json():
     if os.path.exists("not_token.json"):
-        pass
+        print("not_token.json already exists.")
     else:
-        TOKEN = input("paste your bot's token here: ")
         data = {
-            "TOKEN": TOKEN
+            "TOKEN": "your token",
+            "connection_string": "mongodb+srv://USERNAME:PASSWORD@dlh.ev44ah5.mongodb.net/?retryWrites=true&w=majority"
         }
         with open("not_token.json", "w") as jfile:
             json.dump(data, jfile, indent=4)
-    print("require jsons are created.")
+        print("Please fill the require data in not_token.json. Then run this file again.")
 
 
 class MyBot(commands.Bot):
@@ -26,10 +26,6 @@ class MyBot(commands.Bot):
             jdata = json.load(jfile)
         connection_string = jdata["connection_string"]
         self.mongo_client = pymongo.MongoClient(connection_string)
-        self.meeting_db = self.mongo_client["meeting"]
-        self.settings_db = self.mongo_client["settings"]
-        self.meeting_coll = self.meeting_db["meeting"]
-        self.server_settings_coll = self.settings_db["server_settings"]
 
     async def on_ready(self):
         print("Online.")
