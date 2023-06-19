@@ -30,16 +30,16 @@ class MeetingCommand(commands.Cog):
     async def create_meeting(self, interaction: discord.Interaction, title: str, hour: int, minute: int, participate_role: discord.Role = None, day: int = None, month: int = None, year: int = None):
 
         # check if the user has set guild settings
-        self.settings_db = self.mongo_client.settings
-        self.server_settings_coll = self.settings_db.server_settings
-        server_settings = self.server_settings_coll.find_one({"guild_id": interaction.guild.id})
-        if server_settings == None:
-            await error.error_message(interaction, error="guild settings not set", description="Please set guild settings first.")
+        meeting_db = self.mongo_client.meeting
+        server_setting_coll = meeting_db.server_setting
+        server_setting_doc = server_setting_coll.find_one({"guild_id": interaction.guild.id})
+        if server_setting_doc == None:
+            await error.error_message(interaction, error="server settings not set", description="Please set server settings first.")
             return
-        timezone = server_settings["timezone"]
+        timezone = server_setting_doc["timezone"]
         # check if the user has the permission to create meeting
-        meeting_admin_role_id = server_settings["meeting_admin_role_id"]
-        meeting_admin_role = interaction.guild.get_role(meeting_admin_role_id)
+        admin_role_id = server_setting_doc["admin_role_id"]
+        meeting_admin_role = interaction.guild.get_role(admin_role_id)
         if interaction.user not in meeting_admin_role.members:
             await error.error_message(interaction, error="no permission", description="You don't have the permission to create meeting.")
             return
@@ -72,12 +72,14 @@ class MeetingCommand(commands.Cog):
             return 
 
         # instantiate meeting class
-        meeting = Meeting(self.bot, interaction, title, day, month, year, hour, minute, timezone, participate_role)
+        meeting = Meeting(self.bot, interaction.guild, title, year, month, day, hour, minute, timezone, participate_role)
         # create meeting
-        await meeting.create_meeting()
+        embed = await meeting.create_meeting()
+        # send embed
+        await interaction.response.send_message(embed=embed)
     
     @app_commands.checks.has_permissions(administrator=True)
-    @app_commands.command(name="set_server_settings", description="set server settings")
+    @app_commands.command(name="set_server_setting", description="set server settings")
     @app_commands.describe(timezone="choose your timezone", meeting_category="choose the category that meeting voice channels will be created in", meeting_forum_channel="choose the forum that meeting control pannel will be created in", meeting_admin_role="choose the role that can control meeting")
     @app_commands.choices(timezone=[
         discord.app_commands.Choice(name="GMT+0", value="Etc/GMT-0"),
@@ -106,7 +108,7 @@ class MeetingCommand(commands.Cog):
         discord.app_commands.Choice(name="GMT-1", value="Etc/GMT+1"),
     ])
     
-    async def set_server_settings(self, interaction: discord.Interaction, timezone: discord.app_commands.Choice[str], meeting_admin_role: discord.Role, meeting_category:discord.CategoryChannel=None, meeting_forum_channel:discord.ForumChannel=None):
+    async def set_server_setting(self, interaction: discord.Interaction, timezone: discord.app_commands.Choice[str], meeting_admin_role: discord.Role, meeting_category:discord.CategoryChannel=None, meeting_forum_channel:discord.ForumChannel=None):
         if meeting_category == None:
             # create a category for meetings voice_channel and forum
             meeting_category = await interaction.guild.create_category("meeting")
@@ -117,7 +119,6 @@ class MeetingCommand(commands.Cog):
 
         if meeting_forum_channel == None:
             # create a forum channel for meetings
-            print(meeting_forum_channel)
             meeting_forum_channel = await interaction.guild.create_forum("meeting", category=meeting_category)
         
         # create tags for meeting forum
@@ -130,22 +131,22 @@ class MeetingCommand(commands.Cog):
             except discord.errors.HTTPException:
                 pass
 
-        server_settings_doc = {
+        server_setting_doc = {
                 "guild_id": interaction.guild.id,
                 "timezone": timezone.value,
-                "meeting_category_id": meeting_category.id,
-                "meeting_forum_channel_id": meeting_forum_channel.id,
-                "meeting_forum_tags_id": tag_ids,
-                "meeting_admin_role_id": meeting_admin_role.id
+                "category_id": meeting_category.id,
+                "forum_channel_id": meeting_forum_channel.id,
+                "forum_tags_id": tag_ids,
+                "admin_role_id": meeting_admin_role.id
             }
 
         # save server settings to database
-        self.settings_db = self.mongo_client.settings
-        self.server_settings_coll = self.settings_db.server_settings
-        if self.server_settings_coll.find_one({"guild_id": interaction.guild.id}) == None:
-            self.server_settings_coll.insert_one(server_settings_doc)
+        self.meeting_db = self.mongo_client.meeting
+        self.server_setting_coll = self.meeting_db.server_setting
+        if self.server_setting_coll.find_one({"guild_id": interaction.guild.id}) == None:
+            self.server_setting_coll.insert_one(server_setting_doc)
         else:
-            self.server_settings_coll.update_one({"guild_id": interaction.guild.id}, {"$set": server_settings_doc})
+            self.server_setting_coll.update_one({"guild_id": interaction.guild.id}, {"$set": server_setting_doc})
 
         # send message
         embed = discord.Embed(title="Server Settings")
@@ -153,7 +154,7 @@ class MeetingCommand(commands.Cog):
         embed.add_field(name="meeting category", value=meeting_category.mention, inline=False)
         embed.add_field(name="meeting forum channel", value=meeting_forum_channel.mention, inline=False)
         embed.add_field(name="meeting admin role", value=meeting_admin_role.mention, inline=False)
-        await interaction.response.send_message(f"server_settings set.", embed=embed, ephemeral=False)
+        await interaction.response.send_message(f"server_setting set.", embed=embed, ephemeral=False)
 
 async def setup(bot):
     await bot.add_cog(MeetingCommand(bot))
