@@ -1,3 +1,2 @@
-discord.py==2.0.1
-requests
-Pillow
+discord.py==2.3.0  
+pymongo==4.3.3
