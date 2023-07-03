@@ -26,8 +26,8 @@ class MeetingCommand(commands.Cog):
         
     # discord create meeting command
     @app_commands.command(name="create_meeting", description="create a meeting")
-    @app_commands.describe(title="title of the meeting", hour="hour that meeting will starts at (24-hour)", minute="minute that meeting will starts at", day="day that meeting will starts at", month="month that meeting will starts at", year="year that meeting will starts at", participate_role="members of the role that are asked to join the meeting")
-    async def create_meeting(self, interaction: discord.Interaction, title: str, hour: int, minute: int, participate_role: discord.Role = None, day: int = None, month: int = None, year: int = None):
+    @app_commands.describe(title="title of the meeting", hour_local="hour that meeting will starts at (24-hour)", minute_local="minute that meeting will starts at", day_local="day that meeting will starts at", month_local="month that meeting will starts at", year_local="year that meeting will starts at", participate_role="members of the role that are asked to join the meeting")
+    async def create_meeting(self, interaction: discord.Interaction, title: str, hour_local: int, minute_local: int, participate_role: discord.Role = None, day_local: int = None, month_local: int = None, year_local: int = None):
 
         # check if the user has set guild settings
         meeting_db = self.mongo_client.meeting
@@ -37,6 +37,7 @@ class MeetingCommand(commands.Cog):
             await error.error_message(interaction, error="server settings not set", description="Please set server settings first.")
             return
         timezone = server_setting_doc["timezone"]
+
         # check if the user has the permission to create meeting
         admin_role_id = server_setting_doc["admin_role_id"]
         meeting_admin_role = interaction.guild.get_role(admin_role_id)
@@ -46,21 +47,19 @@ class MeetingCommand(commands.Cog):
         
         # auto fill the time if user didn't type
         now_time_UTC = datetime.datetime.now(datetime.timezone.utc).replace(second=0, microsecond=0)
-        guild_time = now_time_UTC.astimezone(pytz.timezone(timezone))
-        if day == None:
-            day = guild_time.day
-        if month == None:
-            month = guild_time.month
-        if year == None:
-            year = guild_time.year
+        now_time_local = now_time_UTC.astimezone(pytz.timezone(timezone))
+        day_local = day_local or now_time_local.day
+        month_local = month_local or now_time_local.month
+        year_local = year_local or now_time_local.year
         
         # check if the time user typed is correct
         try:
-            meeting_time = pytz.timezone(timezone).localize(datetime.datetime(year, month, day, hour, minute))
+            meeting_time_local = pytz.timezone(timezone).localize(datetime.datetime(year_local, month_local, day_local, hour_local, minute_local))
         except ValueError as e:
             await error.error_message(interaction, error=e, description="Please check if the time you typed is correct.")
-        meeting_time_UTC = meeting_time.astimezone(pytz.utc)
+            return
         
+        meeting_time_UTC = meeting_time_local.astimezone(pytz.utc)
         now_time_UTC = datetime.datetime.now(datetime.timezone.utc).replace(second=0, microsecond=0)
         if meeting_time_UTC <= now_time_UTC:
             await error.error_message(interaction, error="time had expired")
@@ -70,9 +69,10 @@ class MeetingCommand(commands.Cog):
         if interaction.channel.type != discord.ChannelType.text:
             await error.error_message(interaction, error="channel type error", description="Please use this command in a text channel.")
             return 
-
+        
         # instantiate meeting class
-        meeting = Meeting(self.bot, interaction.guild, title, year, month, day, hour, minute, timezone, participate_role)
+        meeting_timestamp_UTC = meeting_time_UTC.timestamp()
+        meeting = Meeting(self.bot, interaction.guild, title, meeting_timestamp_UTC, timezone, participate_role)
         # create meeting
         embed = await meeting.create_meeting()
         # send embed
