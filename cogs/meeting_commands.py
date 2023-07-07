@@ -7,12 +7,12 @@ import datetime
 import pytz
 import os
 from utils.error import error
-import uuid
 import asyncio
 from discord.ui import Button, Select, View
 from utils.meeting import Meeting
 from bot import MyBot
 import pymongo
+from bson import ObjectId
 
 
 class MeetingCommand(commands.Cog):
@@ -72,7 +72,9 @@ class MeetingCommand(commands.Cog):
         
         # instantiate meeting class
         meeting_timestamp_UTC = meeting_time_UTC.timestamp()
-        meeting = Meeting(self.bot, interaction.guild, title, meeting_timestamp_UTC, timezone, participate_role)
+        _id = ObjectId()
+        meeting = Meeting(self.bot, _id, interaction.guild, title, meeting_timestamp_UTC, timezone, participate_role)
+        print(f"meeting_timestamp_UTC")
         # create meeting
         embed = await meeting.create_meeting()
         # send embed
@@ -114,38 +116,40 @@ class MeetingCommand(commands.Cog):
         async def create_server_setting(edit:bool):
             # create a category for meetings voice_channel and forum
             meeting_category = await interaction.guild.create_category("meeting")
-            meeting_forum_channel = await meeting_category.create_forum("meeting")
+            forum_channel = await meeting_category.create_forum("meeting")
             # create tags for meeting forum
-            tag_infos = [["pending", "⏳"], ["in progress", "🔄"], ["finished", "✅"]]
+            tag_infos = [["pending", "⏳"], ["in_progress", "🔄"], ["finished", "✅"]]
             tag_ids = {}
             for tag_info in tag_infos:
-                tag = await meeting_forum_channel.create_tag(name=tag_info[0], emoji=tag_info[1])
+                tag = await forum_channel.create_tag(name=tag_info[0], emoji=tag_info[1])
                 tag_ids[tag_info[0]] = tag.id
 
             server_setting_doc = {
                     "guild_id": interaction.guild.id,
                     "timezone": timezone.value,                        
                     "category_id": meeting_category.id,
-                    "forum_channel_id": meeting_forum_channel.id,
+                    "forum_channel_id": forum_channel.id,
                     "forum_tags_id": tag_ids,
                     "admin_role_id": meeting_admin_role.id
                 }
 
             # save server settings to database
-            server_setting_coll.update_one({"guild_id": interaction.guild.id}, {"$set": server_setting_doc})
-
+            if edit:
+                server_setting_coll.update_one({"guild_id": interaction.guild.id}, {"$set": server_setting_doc})
+            else:
+                server_setting_coll.insert_one(server_setting_doc)
+        
             # send message
             embed = discord.Embed(title="Server Settings")
             embed.add_field(name="timezone", value=timezone.value, inline=False)
             embed.add_field(name="meeting category", value=meeting_category.mention, inline=False)
-            embed.add_field(name="meeting forum channel", value=meeting_forum_channel.mention, inline=False)
+            embed.add_field(name="meeting forum channel", value=forum_channel.mention, inline=False)
             embed.add_field(name="meeting admin role", value=meeting_admin_role.mention, inline=False)
             if edit:
                 await interaction.edit_original_response(embed=embed, view=None)
             else:
                 await interaction.response.send_message(embed=embed)
             
-
         if server_setting_doc == None:
             await create_server_setting(edit=False)
         else:
