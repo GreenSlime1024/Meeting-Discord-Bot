@@ -77,6 +77,7 @@ class MeetingCommand(commands.Cog):
         print(f"meeting_timestamp_UTC")
         # create meeting
         embed = await meeting.create_meeting()
+        embed.color = discord.Color.blue()
         # send embed
         await interaction.response.send_message(embed=embed)
     
@@ -140,7 +141,7 @@ class MeetingCommand(commands.Cog):
                 server_setting_coll.insert_one(server_setting_doc)
         
             # send message
-            embed = discord.Embed(title="Server Settings")
+            embed = discord.Embed(title="Server Settings", color=discord.Color.blue())
             embed.add_field(name="timezone", value=timezone.value, inline=False)
             embed.add_field(name="meeting category", value=meeting_category.mention, inline=False)
             embed.add_field(name="meeting forum channel", value=forum_channel.mention, inline=False)
@@ -158,7 +159,7 @@ class MeetingCommand(commands.Cog):
                 meeting_coll.delete_many({"guild_id": interaction.guild.id})
                 await create_server_setting(edit=True)
 
-            embed = discord.Embed(title="Are you sure?", description="If you set server settings again, meetings that you created will be deleted.")
+            embed = discord.Embed(title="Are you sure?", description="If you set server settings again, meetings that you created will be deleted.", color=discord.Color.blue())
             view = View()
             button1 = Button(style=discord.ButtonStyle.green, label="confirm")
             button1.callback = confirm
