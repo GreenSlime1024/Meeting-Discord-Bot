@@ -37,6 +37,25 @@ class Meeting():
             attend_members = []
             meeting_coll = self.mongo_client.meeting.meeting
             meeting_doc = meeting_coll.find_one({"_id": self._id})
+            voice_channel_id = meeting_doc["voice_channel_id"]
+            voice_channel = self.guild.get_channel(voice_channel_id)
+            
+            def absent_or_attend(member: discord.Member):
+                if member not in voice_channel.members:
+                    absent_members.append(member)
+                else:
+                    attend_members.append(member)
+
+            if self.participate_role == None: # all members are asked to join the meeting voice channel
+                for member in self.guild.members:   
+                    absent_or_attend(member)
+            else: # only members with participate role are asked to join the meeting voice channel
+                for member in self.participate_role.members:
+                    absent_or_attend(member)
+            embed = discord.Embed(title="roll call", color=discord.Color.blue())
+            embed.add_field(name="absent members", value="\n".join([member.mention for member in absent_members]), inline=False)
+            embed.add_field(name="attend members", value="\n".join([member.mention for member in attend_members]), inline=False)
+            await interaction.response.send_message(embed=embed, ephemeral=False)
 
         async def archive(interaction: discord.Interaction):
             pass
@@ -67,8 +86,12 @@ class Meeting():
         meeting_doc = meeting_coll.find_one({"_id": self._id})
         thread_message_id = meeting_doc["thread_message_id"]
         thread_id = meeting_doc["thread_id"]
-        thread = await self.bot.fetch_channel(thread_id)
-        thread_message = await thread.fetch_message(thread_message_id)
+        try:
+            thread = await self.bot.fetch_channel(thread_id)
+            thread_message = await thread.fetch_message(thread_message_id)
+        except discord.NotFound:
+            meeting_coll.delete_one({"_id": self._id})
+            return
         view = View
         view = view.from_message(thread_message, timeout=604800)
         view.children[0].callback = self.button1.callback
@@ -84,7 +107,7 @@ class Meeting():
         forum_tags_id = server_setting_doc["forum_tags_id"]
         pending_tag_id = forum_tags_id["pending"]
         pending_tag = forum_channel.get_tag(pending_tag_id)
-        thread, thread_message = await forum_channel.create_thread(name=self.title, view=self.view, embed=self.embed, content="Meeting log will be sent here.", auto_archive_duration=1440, applied_tags=[pending_tag])
+        thread, thread_message = await forum_channel.create_thread(name=f"{self.title} _id={self._id}", view=self.view, embed=self.embed, content="Meeting log will be sent here.", auto_archive_duration=1440, applied_tags=[pending_tag])
         await thread_message.pin()
         embed = self.embed
         embed.add_field(name="meeting thread", value=thread.mention, inline=False)
@@ -117,7 +140,7 @@ class Meeting():
         thread_message = await thread.fetch_message(thread_message_id)
         category_id = server_setting_doc["category_id"]
         category = self.bot.get_channel(category_id)
-        voice_channel = await self.guild.create_voice_channel(name=self.title, category=category)
+        voice_channel = await self.guild.create_voice_channel(name=f"{self.title} _id={self._id}", category=category)
         view = View
         view = view.from_message(thread_message, timeout=604800)
         view.children[0].disabled = False
@@ -128,6 +151,7 @@ class Meeting():
         server_setting_coll = self.mongo_client.meeting.server_setting
         forum_tags_id = server_setting_doc["forum_tags_id"]
         in_progress_tag_id = forum_tags_id["in_progress"]
+        print(in_progress_tag_id)
         forum_channel_id: discord.ForumChannel = server_setting_doc["forum_channel_id"]
         forum_channel = self.bot.get_channel(forum_channel_id)
         in_progress_tag = forum_channel.get_tag(in_progress_tag_id)
