@@ -74,7 +74,6 @@ class MeetingCommand(commands.Cog):
         meeting_timestamp_UTC = meeting_time_UTC.timestamp()
         _id = ObjectId()
         meeting = Meeting(self.bot, _id, interaction.guild, title, meeting_timestamp_UTC, timezone, participate_role)
-        print(f"meeting_timestamp_UTC")
         # create meeting
         embed = await meeting.create_meeting()
         embed.color = discord.Color.blue()
@@ -124,7 +123,8 @@ class MeetingCommand(commands.Cog):
             for tag_info in tag_infos:
                 tag = await forum_channel.create_tag(name=tag_info[0], emoji=tag_info[1])
                 tag_ids[tag_info[0]] = tag.id
-
+                await asyncio.sleep(0.1)
+        
             server_setting_doc = {
                     "guild_id": interaction.guild.id,
                     "timezone": timezone.value,                        
