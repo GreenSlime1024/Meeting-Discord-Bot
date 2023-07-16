@@ -71,9 +71,9 @@ class MeetingCommand(commands.Cog):
             return 
         
         # instantiate meeting class
-        meeting_timestamp_UTC = meeting_time_UTC.timestamp()
+        start_timestamp_UTC = meeting_time_UTC.timestamp()
         _id = ObjectId()
-        meeting = Meeting(self.bot, _id, interaction.guild, title, meeting_timestamp_UTC, timezone, participate_role)
+        meeting = Meeting(self.bot, _id, interaction.guild, title, start_timestamp_UTC, timezone, participate_role)
         # create meeting
         embed = await meeting.create_meeting()
         embed.color = discord.Color.blue()
