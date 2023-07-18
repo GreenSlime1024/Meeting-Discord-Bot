@@ -13,13 +13,12 @@ class Activity(commands.Cog):
 
         async def activiy_task():
             await self.bot.wait_until_ready()
-            activitys = ["運作平台: Eri24816 租的 server", "Made By GreenSlime1024", "還沒做好"]
+            activitys = ["運作平台: Eri24816 租的 server", "Made By GreenSlime1024", "核心功能已完成", "但還有細節和新功能待開發"]
             for activity in activitys:
                 await self.bot.change_presence(activity=discord.Game(activity))
                 await asyncio.sleep(15)
-
-        self.bg_task = self.bot.loop.create_task(activiy_task())
-
+                
+        self.bot.loop.create_task(activiy_task())
 
 async def setup(bot):
     await bot.add_cog(Activity(bot))
