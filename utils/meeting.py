@@ -42,13 +42,17 @@ class Meeting():
 
         async def roll_call(interaction: discord.Interaction):
             await interaction.response.defer()
+            # create absent and attend members list
             absent_members = []
             attend_members = []
+            # get meeting info from database
             meeting_coll = self.mongo_client.meeting.meeting
             meeting_doc = meeting_coll.find_one({"_id": self._id})
+            # get voice channel
             voice_channel_id = meeting_doc["voice_channel_id"]
             voice_channel = self.guild.get_channel(voice_channel_id)
             
+            # a function to check if a member is in the meeting voice channel
             def absent_or_attend(member: discord.Member):
                 if member not in voice_channel.members:
                     absent_members.append(member)
@@ -61,14 +65,19 @@ class Meeting():
             else: # only members with participate role are asked to join the meeting voice channel
                 for member in self.participate_role.members:
                     absent_or_attend(member)
+
+            # create embed 
             embed = discord.Embed(title="roll call", color=discord.Color.blue())
-            embed.add_field(name="absent members", value="\n".join([member.mention for member in absent_members]), inline=False)
-            embed.add_field(name="attend members", value="\n".join([member.mention for member in attend_members]), inline=False)
+            # add absent and attend members to embed
+            embed.add_field(name="absent members", value="\n".join([member.mention for member in absent_members]), inline=True)
+            embed.add_field(name="attend members", value="\n".join([member.mention for member in attend_members]), inline=True)
+            # send embed to thread
             await interaction.followup.send(embed=embed, ephemeral=False)
 
         async def end_meeting(interaction: discord.Interaction=None):
             if interaction != None:
                 await interaction.response.defer()
+            # get meeting info from database
             meeting_coll = self.mongo_client.meeting.meeting
             meeting_doc = meeting_coll.find_one({"_id": self._id})
             server_setting_coll = self.mongo_client.meeting.server_setting
@@ -118,26 +127,32 @@ class Meeting():
         self.button1.callback = roll_call
         self.button2.callback = end_meeting
 
+        # create view
         self.view = View(timeout=604800)
+        # add buttons into view
         self.view.add_item(self.button1)
         self.view.add_item(self.button2)
 
-    # this function is called when the bot reboot
     async  def load_meeting(self):
+        # get meeting info from database
         meeting_coll = self.mongo_client.meeting.meeting
         meeting_doc = meeting_coll.find_one({"_id": self._id})
+        # get thread and thread message
         thread_message_id = meeting_doc["thread_message_id"]
         thread_id = meeting_doc["thread_id"]
-        try:
+        try: # if thread or thread message is deleted, delete meeting doc and return
             thread = await self.bot.fetch_channel(thread_id)
             thread_message = await thread.fetch_message(thread_message_id)
         except discord.NotFound:
             meeting_coll.delete_one({"_id": self._id})
             return
+        # get view from thread message
         view = View
         view = view.from_message(thread_message, timeout=604800)
+        # add callback to buttons
         view.children[0].callback = self.button1.callback
         view.children[1].callback = self.button2.callback
+        # edit view
         await thread_message.edit(view=view)
         print(f"meeting {self._id} loaded")
         
@@ -145,15 +160,24 @@ class Meeting():
         # get server settings
         server_setting_coll = self.mongo_client.meeting.server_setting
         server_setting_doc = server_setting_coll.find_one({"guild_id": self.guild.id})
+        # get forum channel
         forum_channel_id = server_setting_doc["forum_channel_id"]
         forum_channel = self.bot.get_channel(forum_channel_id)
+        # get forum tags'id list
         forum_tags_id = server_setting_doc["forum_tags_id"]
+        # get pending tag
         pending_tag_id = forum_tags_id["pending"]
         pending_tag = forum_channel.get_tag(pending_tag_id)
+        # create thread at forum channel
         thread, thread_message = await forum_channel.create_thread(name=f"{self.title} _id={self._id}", view=self.view, embed=self.embed, content="Meeting log will be sent here.", auto_archive_duration=1440, applied_tags=[pending_tag])
+        # pin thread message that contains buttons and embed
         await thread_message.pin()
+        # add thread and meeting _id to embed
         embed = self.embed
         embed.add_field(name="meeting thread", value=thread.mention, inline=False)
+        embed.set_footer(text=f"meeting id: {self._id}")
+        # edit thread message
+        await thread_message.edit(embed=embed)
 
         # save the meeting data
         meeting_doc = {
@@ -169,8 +193,6 @@ class Meeting():
             }
         self.meeting_coll = self.mongo_client.meeting.meeting
         self.meeting_coll.insert_one(meeting_doc)
-        self.embed.set_footer(text=f"meeting id: {self._id}")
-        await thread_message.edit(embed=self.embed)
         return embed
 
     async def start_meeting(self):
