@@ -53,11 +53,11 @@ class Meeting_task(commands.Cog):
         # call start check loop
         self.auto_start_end.start()
 
-    # start check loop
+    # check the time every second
     @tasks.loop(seconds=1)
     async def auto_start_end(self):
         now_time_UTC = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
-        if now_time_UTC.second == 0:
+        if now_time_UTC.second == 0: # if the time's second is 0, call auto_start and auto_end function
             auto_start_end_wait = []
             auto_start_end_wait.append(self.auto_start())
             auto_start_end_wait.append(self.auto_end())
