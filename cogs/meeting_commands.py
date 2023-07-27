@@ -2,16 +2,13 @@ import discord
 from discord.ext import commands
 from discord.ext import tasks
 from discord import app_commands
-import json
 import datetime
 import pytz
-import os
 from utils.error import error
 import asyncio
 from discord.ui import Button, Select, View
 from utils.meeting import Meeting
 from bot import MyBot
-import pymongo
 from bson import ObjectId
 
 
@@ -117,6 +114,9 @@ class MeetingCommand(commands.Cog):
             # create a category for meetings voice_channel and forum
             meeting_category = await interaction.guild.create_category("meeting")
             forum_channel = await meeting_category.create_forum("meeting")
+            # create a thread to explain how to use the forum
+            thread, thread_message = await forum_channel.create_thread(name="How to use this?", content="- Buttons\n - roll call: Do a roll call for the members in voice channel. (will be create after meeting start) \n - end: End meeting.\n\n- Meeting Info Embed\n - title: The meeting title.\n - start time: when the meeting will start.\n - participate role: The role that you want those member to participate this meeting.\n - meeting thread: The meeting thread that has buttons and data will be sent.\n - footer: The meeting _id.\n\n- Embed Colors\n - yellow: ⏳ pending\n - green: 🔄 in progress\n - red: ✅ finished")
+            await thread_message.pin()
             # create tags for meeting forum
             tag_infos = [["pending", "⏳"], ["in_progress", "🔄"], ["finished", "✅"]]
             tag_ids = {}

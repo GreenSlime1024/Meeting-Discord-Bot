@@ -2,7 +2,6 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from bot import MyBot
-import os
 
 
 class Admin(commands.Cog):
@@ -29,19 +28,19 @@ class Admin(commands.Cog):
     @app_commands.command(name="load",description="load extension")
     async def load(self, interaction: discord.Interaction, extension: str):
         await self.bot.load_extension(f"cogs.{extension}")
-        await interaction.response.send_message(f"loaded `{extension}`", ephemeral=False)
+        await interaction.response.send_message(f"`{extension}` loaded", ephemeral=False)
 
     @commands.is_owner()
     @app_commands.command(name="reload", description="reload extension")
     async def reload(self, interaction: discord.Interaction, extension: str):
         await self.bot.reload_extension(f"cogs.{extension}")
-        await interaction.response.send_message(f"reloaded `{extension}`", ephemeral=False)
+        await interaction.response.send_message(f"`{extension}` reloaded", ephemeral=False)
 
     @commands.is_owner()
     @app_commands.command(name="unload",description="unload extension")
     async def unload(self, interaction: discord.Interaction, extension: str):
         await self.bot.unload_extension(f"cogs.{extension}")
-        await interaction.response.send_message(f"unloaded `{extension}`", ephemeral=False)
+        await interaction.response.send_message(f"`{extension}` unloaded", ephemeral=False)
 
 
 async def setup(bot):

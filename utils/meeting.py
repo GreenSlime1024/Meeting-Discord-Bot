@@ -87,9 +87,6 @@ class Meeting():
             thread_id = meeting_doc["thread_id"]
             thread = await self.bot.fetch_channel(thread_id)
             thread_message = await thread.fetch_message(thread_message_id)
-            # get category
-            category_id = server_setting_doc["category_id"]
-            category = self.bot.get_channel(category_id)
             # get voice channel
             voice_channel_id = meeting_doc["voice_channel_id"]
             voice_channel = self.bot.get_channel(voice_channel_id)
