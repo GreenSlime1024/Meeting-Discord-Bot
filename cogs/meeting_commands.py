@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-from discord.ext import tasks
 from discord import app_commands
 import datetime
 import pytz
@@ -116,6 +115,7 @@ class MeetingCommand(commands.Cog):
             forum_channel = await meeting_category.create_forum("meeting")
             # create a thread to explain how to use the forum
             thread, thread_message = await forum_channel.create_thread(name="How to use this?", content="- Buttons\n - roll call: Do a roll call for the members in voice channel. (will be create after meeting start) \n - end: End meeting.\n\n- Meeting Info Embed\n - title: The meeting title.\n - start time: when the meeting will start.\n - participate role: The role that you want those member to participate this meeting.\n - meeting thread: The meeting thread that has buttons and data will be sent.\n - footer: The meeting _id.\n\n- Embed Colors\n - yellow: ⏳ pending\n - green: 🔄 in progress\n - red: ✅ finished")
+            await thread.edit(pinned=True)
             await thread_message.pin()
             # create tags for meeting forum
             tag_infos = [["pending", "⏳"], ["in_progress", "🔄"], ["finished", "✅"]]
@@ -127,7 +127,7 @@ class MeetingCommand(commands.Cog):
         
             server_setting_doc = {
                     "guild_id": interaction.guild.id,
-                    "timezone": timezone.value,                        
+                    "timezone": timezone.value,
                     "category_id": meeting_category.id,
                     "forum_channel_id": forum_channel.id,
                     "forum_tags_id": tag_ids,
