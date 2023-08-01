@@ -234,3 +234,17 @@ class Meeting():
         print(f"meeting {self._id} started")
         # change meeting status to in_progress
         meeting_coll.update_one({"_id": self._id}, {"$set": {"status": "in_progress", "voice_channel_id": voice_channel.id}})
+
+    async def join_leave_log(self, member:discord.Member, action:str):
+        meeting_coll = self.mongo_client.meeting.meeting
+        meeting_doc = meeting_coll.find_one({"_id": self._id})
+        thread_id = meeting_doc["thread_id"]
+        thread = await self.bot.fetch_channel(thread_id)
+        embed = discord.Embed(title="join leave log")
+        if action == "join":
+            embed.description = f"{member.mention} joined the meeting."
+            embed.color = discord.Color.green()
+        elif action == "leave":
+            embed.description = f"{member.mention} left the meeting."
+            embed.color = discord.Color.red()
+        await thread.send(embed=embed)

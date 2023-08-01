@@ -19,10 +19,11 @@ class Meeting_task(commands.Cog):
         guild_id = meeting_doc["guild_id"]
         guild = self.bot.get_guild(guild_id)
         participate_role_id = meeting_doc["participate_role_id"]
+        participate_role = guild.get_role(participate_role_id)
         title = meeting_doc["title"]
         timezone = server_setting_doc["timezone"]
         start_timestamp_UTC = meeting_doc["start_timestamp_UTC"]         
-        meeting = Meeting(self.bot, _id, guild, title, start_timestamp_UTC, timezone, participate_role_id)
+        meeting = Meeting(self.bot, _id, guild, title, start_timestamp_UTC, timezone, participate_role)
         return meeting
         
     @commands.Cog.listener()
@@ -52,6 +53,39 @@ class Meeting_task(commands.Cog):
 
         # call start check loop
         self.auto_start_end.start()
+    
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member:discord.member, before:discord.VoiceState, after:discord.VoiceState):
+        meeting_coll = self.mongo_client.meeting.meeting
+        server_setting_coll = self.mongo_client.meeting.server_setting
+
+        if before.channel is None and after.channel is None:
+            return
+        if (before.channel != None and after.channel != None) and (before.channel.id == after.channel.id):
+            return
+
+        # Check if the member joined a voice channel
+        if after.channel is not None:
+            print(f"{member.display_name} joined {after.channel.name}.")
+            # get meeting info from database
+            meeting_doc = meeting_coll.find_one({"voice_channel_id": after.channel.id})
+            action = "join"
+            # get server setting
+            server_setting_doc = server_setting_coll.find_one({"guild_id": meeting_doc["guild_id"]})
+            # get meeting object
+            meeting = await self.get_meeting_info(meeting_doc, server_setting_doc)
+            await meeting.join_leave_log(member, action)
+    
+        # Check if the member left a voice channel
+        if before.channel is not None:
+            print(f"{member.display_name} left {before.channel.name}.")
+            meeting_doc = meeting_coll.find_one({"voice_channel_id": before.channel.id})
+            action = "leave"
+            # get server setting
+            server_setting_doc = server_setting_coll.find_one({"guild_id": meeting_doc["guild_id"]})
+            # get meeting object
+            meeting = await self.get_meeting_info(meeting_doc, server_setting_doc)
+            await meeting.join_leave_log(member, action)
 
     # check the time every second
     @tasks.loop(seconds=1)
