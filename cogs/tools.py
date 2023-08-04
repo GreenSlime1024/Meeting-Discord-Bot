@@ -14,22 +14,23 @@ class Main(commands.Cog):
 
     @app_commands.command(name="help", description="check help")
     async def help(self, interaction: discord.Interaction):
-        tools_embed = discord.Embed(title="Tools Command", color=discord.Color.blue())
-        tools_embed.add_field(name="ping", value="check ping", inline=False)
-        tools_embed.add_field(name="author", value="check author's blog", inline=False)
-        tools_embed.add_field(name="github-repo", value="check this bot's github repo", inline=False)
-        tools_embed.add_field(name="support-server", value="check this bot's support server", inline=False)
-        tools_embed.add_field(name="guild", value="check the guilds where I am in", inline=False)
-        
-        meeting_embed = discord.Embed(title="Meeting Command", color=discord.Color.blue())
-        meeting_embed.add_field(name="</set_server_settings:1121308554448617602>", value="set server settings\nYou must do this before you </create_meeting:1101520045449957467>", inline=False)
-        meeting_embed.add_field(name="</create_meeting:1101520045449957467>", value="create a meeting", inline=False)
-        
+        embed_title = discord.Embed(title="How to create a meeting?", color=discord.Color.blue())
 
-        embeds = [tools_embed, meeting_embed]
-        await interaction.response.send_message(embeds=embeds)
-        
+        embed_sever_settings = discord.Embed(title="1. Set Server Settings", color=discord.Color.blue())
+        embed_sever_settings.add_field(name="[timezone]", value="timezone of your region", inline=False)
+        embed_sever_settings.add_field(name="[meeting_admin_role]", value="choose the role that can control meeting", inline=False)
 
+        embed_create_meeting = discord.Embed(title="2. Create a Meeting", color=discord.Color.blue())
+        embed_create_meeting.add_field(name="[hour_local]", value="hour that meeting will starts at (24-hour)", inline=False)
+        embed_create_meeting.add_field(name="[minute_local]", value="minute that meeting will starts at (24-hour)", inline=False)
+        embed_create_meeting.add_field(name="(day_local)", value="day that meeting will starts at (24-hour)", inline=False)
+        embed_create_meeting.add_field(name="(month_local)", value="month that meeting will starts at (24-hour)", inline=False)
+        embed_create_meeting.add_field(name="(year_local)", value="year that meeting will starts at (24-hour)", inline=False)
+        embed_create_meeting.add_field(name="(participate_role)", value="members of the role that are asked to join the meeting", inline=False)
+        embed_create_meeting.add_field(name="(remind_time_ago)", value="time before the meeting that the bot will remind the members to join the meeting", inline=False)
+        
+        await interaction.response.send_message(embeds=[embed_title, embed_sever_settings, embed_create_meeting])
+        
     @app_commands.command(name="ping", description="check ping")
     async def ping(self, interaction: discord.Interaction):
         await interaction.response.send_message(f"pong ({round(self.bot.latency*1000)}ms)")
