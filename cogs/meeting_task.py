@@ -22,8 +22,9 @@ class Meeting_task(commands.Cog):
         participate_role = guild.get_role(participate_role_id)
         title = meeting_doc["title"]
         timezone = server_setting_doc["timezone"]
-        start_timestamp_UTC = meeting_doc["start_timestamp_UTC"]         
-        meeting = Meeting(self.bot, _id, guild, title, start_timestamp_UTC, timezone, participate_role)
+        start_timestamp_UTC = meeting_doc["start_timestamp_UTC"]
+        remind_timestamp_UTC = meeting_doc["remind_timestamp_UTC"]
+        meeting = Meeting(bot=self.bot, _id=_id, guild=guild, participate_role=participate_role, title=title, timezone=timezone, start_timestamp_UTC=start_timestamp_UTC, remind_timestamp_UTC=remind_timestamp_UTC)
         return meeting
         
     @commands.Cog.listener()
@@ -52,7 +53,7 @@ class Meeting_task(commands.Cog):
         await asyncio.gather(*meeting_wait_load_or_start)
 
         # call start check loop
-        self.auto_start_end.start()
+        self.auto_check.start()
     
     @commands.Cog.listener()
     async def on_voice_state_update(self, member:discord.member, before:discord.VoiceState, after:discord.VoiceState):
@@ -93,18 +94,18 @@ class Meeting_task(commands.Cog):
 
     # check the time every second
     @tasks.loop(seconds=1)
-    async def auto_start_end(self):
+    async def auto_check(self):
         now_time_UTC = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
         if now_time_UTC.second == 0: # if the time's second is 0, call auto_start and auto_end function
-            auto_start_end_wait = []
-            auto_start_end_wait.append(self.auto_start())
-            auto_start_end_wait.append(self.auto_end())
-            await asyncio.gather(*auto_start_end_wait)
+            meeting_coll  = self.mongo_client.meeting.meeting
+            server_setting_coll = self.mongo_client.meeting.server_setting
+            tasks = []
+            tasks.append(self.auto_start(meeting_coll=meeting_coll, server_setting_coll=server_setting_coll))
+            tasks.append(self.auto_end(meeting_coll=meeting_coll, server_setting_coll=server_setting_coll))
+            tasks.append(self.auto_remind(meeting_coll=meeting_coll, server_setting_coll=server_setting_coll))
+            await asyncio.gather(*tasks)
 
-    async def auto_start(self):
-        # get meeting info from database
-        meeting_coll = self.mongo_client.meeting.meeting
-        server_setting_coll = self.mongo_client.meeting.server_setting
+    async def auto_start(self, meeting_coll, server_setting_coll):
         # get now timestamp UTC
         now_time_UTC = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
         now_timestamp_UTC = now_time_UTC.timestamp()
@@ -120,10 +121,7 @@ class Meeting_task(commands.Cog):
             meeting_wait_start.append(meeting.start_meeting())
         await asyncio.gather(*meeting_wait_start)
 
-    async def auto_end(self):
-        # get meeting info from database
-        meeting_coll  = self.mongo_client.meeting.meeting
-        server_setting_coll = self.mongo_client.meeting.server_setting
+    async def auto_end(self, meeting_coll, server_setting_coll):
         meeting_wait_end = []
 
         # find meeting that status is in_progress
@@ -145,6 +143,16 @@ class Meeting_task(commands.Cog):
                 meeting_wait_end.append(meeting.button2.callback())
         await asyncio.gather(*meeting_wait_end)
 
+    async def auto_remind(self, meeting_coll, server_setting_coll):
+        meeting_wait_remind = []
+        
+        now_time_UTC = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
+        now_timestamp_UTC = now_time_UTC.timestamp()
+        for meeting_doc in meeting_coll.find({"remind_timestamp_UTC": int(now_timestamp_UTC), "status": "pending"}):
+            server_setting_doc = server_setting_coll.find_one({"guild_id": meeting_doc["guild_id"]})
+            meeting = await self.get_meeting_info(meeting_doc, server_setting_doc)
+            meeting_wait_remind.append(meeting.auto_remind())
+        await asyncio.gather(*meeting_wait_remind)
 
 async def setup(bot):
     await bot.add_cog(Meeting_task(bot))

@@ -22,9 +22,18 @@ class MeetingCommand(commands.Cog):
         
     # discord create meeting command
     @app_commands.command(name="create_meeting", description="create a meeting")
+    @app_commands.choices(
+        remind_time_ago=[
+            app_commands.Choice(name="1 minute ago", value=1),
+            app_commands.Choice(name="5 minutes ago", value=5),
+            app_commands.Choice(name="10 minutes ago", value=10),
+            app_commands.Choice(name="15 minutes ago", value=15),
+            app_commands.Choice(name="30 minutes ago", value=30),
+            app_commands.Choice(name="1 hour ago", value=60),
+        ]
+    )
     @app_commands.describe(title="title of the meeting", hour_local="hour that meeting will starts at (24-hour)", minute_local="minute that meeting will starts at", day_local="day that meeting will starts at", month_local="month that meeting will starts at", year_local="year that meeting will starts at", participate_role="members of the role that are asked to join the meeting")
-    async def create_meeting(self, interaction: discord.Interaction, title: str, hour_local: int, minute_local: int, participate_role: discord.Role = None, day_local: int = None, month_local: int = None, year_local: int = None):
-
+    async def create_meeting(self, interaction: discord.Interaction, title: str, hour_local: int, minute_local: int, participate_role: discord.Role = None, remind_time_ago: discord.app_commands.Choice[int] = None ,day_local: int = None, month_local: int = None, year_local: int = None):
         # check if the user has set guild settings
         meeting_db = self.mongo_client.meeting
         server_setting_coll = meeting_db.server_setting
@@ -68,8 +77,13 @@ class MeetingCommand(commands.Cog):
         
         # instantiate meeting class
         start_timestamp_UTC = meeting_time_UTC.timestamp()
+        if remind_time_ago == None:
+            remind_timestamp_UTC = 0
+        else:
+            remind_time_UTC = meeting_time_UTC - datetime.timedelta(minutes=remind_time_ago.value)
+            remind_timestamp_UTC = remind_time_UTC.timestamp()
         _id = ObjectId()
-        meeting = Meeting(self.bot, _id, interaction.guild, title, start_timestamp_UTC, timezone, participate_role)
+        meeting = Meeting(bot=self.bot, _id=_id, guild=interaction.guild, title=title, start_timestamp_UTC=start_timestamp_UTC, remind_timestamp_UTC=remind_timestamp_UTC, participate_role=participate_role, timezone=timezone)
         # create meeting
         embed = await meeting.create_meeting()
         embed.color = discord.Color.blue()
@@ -80,30 +94,30 @@ class MeetingCommand(commands.Cog):
     @app_commands.command(name="set_server_settings", description="set server settings")
     @app_commands.describe(timezone="choose your timezone", meeting_admin_role="choose the role that can control meeting")
     @app_commands.choices(timezone=[
-        discord.app_commands.Choice(name="GMT+0", value="Etc/GMT-0"),
-        discord.app_commands.Choice(name="GMT+1", value="Etc/GMT-1"),
-        discord.app_commands.Choice(name="GMT+2", value="Etc/GMT-2"),
-        discord.app_commands.Choice(name="GMT+3", value="Etc/GMT-3"),
-        discord.app_commands.Choice(name="GMT+4", value="Etc/GMT-4"),
-        discord.app_commands.Choice(name="GMT+5", value="Etc/GMT-5"),
-        discord.app_commands.Choice(name="GMT+6", value="Etc/GMT-6"),
-        discord.app_commands.Choice(name="GMT+7", value="Etc/GMT-7"),
-        discord.app_commands.Choice(name="GMT+8", value="Etc/GMT-8"),
-        discord.app_commands.Choice(name="GMT+9", value="Etc/GMT-9"),
-        discord.app_commands.Choice(name="GMT+10", value="Etc/GMT-10"),
-        discord.app_commands.Choice(name="GMT+11", value="Etc/GMT-11"),
-        discord.app_commands.Choice(name="GMT+12", value="Etc/GMT-12"),
-        discord.app_commands.Choice(name="GMT-11", value="Etc/GMT+11"),
-        discord.app_commands.Choice(name="GMT-10", value="Etc/GMT+10"),
-        discord.app_commands.Choice(name="GMT-9", value="Etc/GMT+9"),
-        discord.app_commands.Choice(name="GMT-8", value="Etc/GMT+8"),
-        discord.app_commands.Choice(name="GMT-7", value="Etc/GMT+7"),
-        discord.app_commands.Choice(name="GMT-6", value="Etc/GMT+6"),
-        discord.app_commands.Choice(name="GMT-5", value="Etc/GMT+5"),
-        discord.app_commands.Choice(name="GMT-4", value="Etc/GMT+4"),
-        discord.app_commands.Choice(name="GMT-3", value="Etc/GMT+3"),
-        discord.app_commands.Choice(name="GMT-2", value="Etc/GMT+2"),
-        discord.app_commands.Choice(name="GMT-1", value="Etc/GMT+1"),
+        app_commands.Choice(name="GMT+0", value="Etc/GMT-0"),
+        app_commands.Choice(name="GMT+1", value="Etc/GMT-1"),
+        app_commands.Choice(name="GMT+2", value="Etc/GMT-2"),
+        app_commands.Choice(name="GMT+3", value="Etc/GMT-3"),
+        app_commands.Choice(name="GMT+4", value="Etc/GMT-4"),
+        app_commands.Choice(name="GMT+5", value="Etc/GMT-5"),
+        app_commands.Choice(name="GMT+6", value="Etc/GMT-6"),
+        app_commands.Choice(name="GMT+7", value="Etc/GMT-7"),
+        app_commands.Choice(name="GMT+8", value="Etc/GMT-8"),
+        app_commands.Choice(name="GMT+9", value="Etc/GMT-9"),
+        app_commands.Choice(name="GMT+10", value="Etc/GMT-10"),
+        app_commands.Choice(name="GMT+11", value="Etc/GMT-11"),
+        app_commands.Choice(name="GMT+12", value="Etc/GMT-12"),
+        app_commands.Choice(name="GMT-11", value="Etc/GMT+11"),
+        app_commands.Choice(name="GMT-10", value="Etc/GMT+10"),
+        app_commands.Choice(name="GMT-9", value="Etc/GMT+9"),
+        app_commands.Choice(name="GMT-8", value="Etc/GMT+8"),
+        app_commands.Choice(name="GMT-7", value="Etc/GMT+7"),
+        app_commands.Choice(name="GMT-6", value="Etc/GMT+6"),
+        app_commands.Choice(name="GMT-5", value="Etc/GMT+5"),
+        app_commands.Choice(name="GMT-4", value="Etc/GMT+4"),
+        app_commands.Choice(name="GMT-3", value="Etc/GMT+3"),
+        app_commands.Choice(name="GMT-2", value="Etc/GMT+2"),
+        app_commands.Choice(name="GMT-1", value="Etc/GMT+1"),
     ])
     
     async def set_server_settings(self, interaction: discord.Interaction, timezone: discord.app_commands.Choice[str], meeting_admin_role: discord.Role):

@@ -13,7 +13,7 @@ from bot import MyBot
 from bson.objectid import ObjectId
 
 class Meeting():
-    def __init__(self, bot: MyBot, _id:ObjectId, guild:discord.Guild, title: str, start_timestamp_UTC, timezone:str, participate_role: discord.Role = None):
+    def __init__(self, bot: MyBot, _id:ObjectId, guild:discord.Guild, title: str, start_timestamp_UTC, timezone:str, participate_role: discord.Role, remind_timestamp_UTC):
         self.bot = bot
         self._id = _id
         self.mongo_client:MongoClient  = bot.mongo_client
@@ -22,9 +22,9 @@ class Meeting():
         self.participate_role = participate_role
         self.timezone = timezone
         self.start_timestamp_UTC = start_timestamp_UTC
-        self.meeting_time_UTC = datetime.datetime.fromtimestamp(start_timestamp_UTC, datetime.timezone.utc)
-        self.meeting_time_local = self.meeting_time_UTC.astimezone(pytz.timezone(timezone))
-        self.meeting_timestamp_local = self.meeting_time_local.timestamp()
+        self.start_time = datetime.datetime.fromtimestamp(start_timestamp_UTC, pytz.timezone(timezone))
+        self.start_timestamp_local = self.start_time.timestamp()
+        self.remind_timestamp_UTC = remind_timestamp_UTC
         
         if self.participate_role == None:
             self.participate_role_id = None
@@ -34,7 +34,9 @@ class Meeting():
         # create embed
         self.embed = discord.Embed(title="Meeting Info", color=discord.Color.yellow())
         self.embed.add_field(name="title", value=self.title, inline=False)
-        self.embed.add_field(name="start time", value=f"<t:{int(self.meeting_timestamp_local)}:F> <t:{int(self.meeting_timestamp_local)}:R>", inline=False)
+        self.embed.add_field(name="start time", value=f"<t:{int(self.start_timestamp_local)}:F> <t:{int(self.start_timestamp_local)}:R>", inline=False)
+        if self.remind_timestamp_UTC != 0:
+            self.embed.add_field(name="remind time", value=f"<t:{int(self.remind_timestamp_UTC)}:F> <t:{int(self.remind_timestamp_UTC)}:R>", inline=False)
         if self.participate_role_id == None:
             self.embed.add_field(name="participate role", value="@everyone", inline=False)
         else:
@@ -185,7 +187,8 @@ class Meeting():
             "thread_message_id": thread_message.id,
             "thread_id": thread.id,
             "participate_role_id": self.participate_role_id,
-            "start_timestamp_UTC": int(self.meeting_time_UTC.timestamp()),
+            "start_timestamp_UTC": int(self.start_timestamp_UTC),
+            "remind_timestamp_UTC": int(self.remind_timestamp_UTC),
             "idle_time": 0,
             }
         self.meeting_coll = self.mongo_client.meeting.meeting
@@ -248,3 +251,13 @@ class Meeting():
             embed.description = f"{member.mention} left the meeting."
             embed.color = discord.Color.red()
         await thread.send(embed=embed)
+
+    async def auto_remind(self):
+        meeting_coll = self.mongo_client.meeting.meeting
+        meeting_doc = meeting_coll.find_one({"_id": self._id})
+        thread_id = meeting_doc["thread_id"]
+        thread = await self.bot.fetch_channel(thread_id)
+        embed = discord.Embed(title="Meeting Reminder", description=f"Meeting will start <t:{int(self.start_timestamp_local)}:R>.")
+        embed.color = discord.Color.blue()
+        await thread.send(embed=embed, content=f"{self.participate_role.mention}")
+        
