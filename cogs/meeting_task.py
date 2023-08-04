@@ -69,6 +69,8 @@ class Meeting_task(commands.Cog):
             print(f"{member.display_name} joined {after.channel.name}.")
             # get meeting info from database
             meeting_doc = meeting_coll.find_one({"voice_channel_id": after.channel.id})
+            if meeting_doc is None:
+                return
             action = "join"
             # get server setting
             server_setting_doc = server_setting_coll.find_one({"guild_id": meeting_doc["guild_id"]})
@@ -80,6 +82,8 @@ class Meeting_task(commands.Cog):
         if before.channel is not None:
             print(f"{member.display_name} left {before.channel.name}.")
             meeting_doc = meeting_coll.find_one({"voice_channel_id": before.channel.id})
+            if meeting_doc is None:
+                return
             action = "leave"
             # get server setting
             server_setting_doc = server_setting_coll.find_one({"guild_id": meeting_doc["guild_id"]})
