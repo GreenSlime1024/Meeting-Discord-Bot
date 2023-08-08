@@ -145,7 +145,7 @@ class Meeting_task(commands.Cog):
 
     async def auto_remind(self, meeting_coll, server_setting_coll):
         meeting_wait_remind = []
-        
+
         now_time_UTC = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
         now_timestamp_UTC = now_time_UTC.timestamp()
         for meeting_doc in meeting_coll.find({"remind_timestamp_UTC": int(now_timestamp_UTC), "status": "pending"}):
