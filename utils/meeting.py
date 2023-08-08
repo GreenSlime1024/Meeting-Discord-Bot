@@ -43,6 +43,14 @@ class Meeting():
             self.embed.add_field(name="participate role", value=self.participate_role.mention, inline=False)
 
         async def roll_call(interaction: discord.Interaction):
+            server_setting_coll = self.mongo_client.meeting.server_setting
+            server_setting_doc = server_setting_coll.find_one({"guild_id": self.guild.id})
+            mdmin_role_id = server_setting_doc["admin_role_id"]
+            admin_role = self.guild.get_role(mdmin_role_id)
+            if admin_role not in interaction.user.roles:
+                await error.error_message(interaction, "you are not meeting admin")
+                return
+            # check if user is meeting admin
             await interaction.response.defer()
             # create absent and attend members list
             absent_members = []
@@ -77,13 +85,19 @@ class Meeting():
             await interaction.followup.send(embed=embed, ephemeral=False)
 
         async def end_meeting(interaction: discord.Interaction=None):
+            server_setting_coll = self.mongo_client.meeting.server_setting
+            server_setting_doc = server_setting_coll.find_one({"guild_id": self.guild.id})
+            # check if user is meeting admin
+            admin_role_id = server_setting_doc["admin_role_id"]
+            admin_role = self.guild.get_role(admin_role_id)
             if interaction != None:
+                if admin_role not in interaction.user.roles:
+                    await error.error_message(interaction, "you are not meeting admin")
+                    return
                 await interaction.response.defer()
             # get meeting info from database
             meeting_coll = self.mongo_client.meeting.meeting
             meeting_doc = meeting_coll.find_one({"_id": self._id})
-            server_setting_coll = self.mongo_client.meeting.server_setting
-            server_setting_doc = server_setting_coll.find_one({"guild_id": self.guild.id})
             # get thread and thread message
             thread_message_id = meeting_doc["thread_message_id"]
             thread_id = meeting_doc["thread_id"]
@@ -99,6 +113,7 @@ class Meeting():
             view = view.from_message(thread_message, timeout=604800)
             view.children[0].disabled = True
             view.children[1].disabled = True
+            view.stop()
             # change embed color from yellow to red
             embed = thread_message.embeds[0]
             embed.color = discord.Color.red()
