@@ -32,7 +32,7 @@ class MeetingCommand(commands.Cog):
             app_commands.Choice(name="1 hour ago", value=60),
         ]
     )
-    @app_commands.describe(title="title of the meeting", hour_local="hour that meeting will starts at (24-hour)", minute_local="minute that meeting will starts at", day_local="day that meeting will starts at", month_local="month that meeting will starts at", year_local="year that meeting will starts at", participate_role="members of the role that are asked to join the meeting")
+    @app_commands.describe(title="title of the meeting", hour_local="hour that meeting will starts at (24-hour)", minute_local="minute that meeting will starts at (24-hour)", day_local="day that meeting will starts at (24-hour)", month_local="month that meeting will starts at (24-hour)", year_local="year that meeting will starts at (24-hour)", participate_role="members of the role that are asked to join the meeting", remind_time_ago="time before the meeting that the bot will remind the members to join the meeting")
     async def create_meeting(self, interaction: discord.Interaction, title: str, hour_local: int, minute_local: int, participate_role: discord.Role = None, remind_time_ago: discord.app_commands.Choice[int] = None ,day_local: int = None, month_local: int = None, year_local: int = None):
         # check if the user has set guild settings
         meeting_db = self.mongo_client.meeting
@@ -92,7 +92,7 @@ class MeetingCommand(commands.Cog):
     
     @app_commands.checks.has_permissions(administrator=True)
     @app_commands.command(name="set_server_settings", description="set server settings")
-    @app_commands.describe(timezone="choose your timezone", meeting_admin_role="choose the role that can control meeting")
+    @app_commands.describe(timezone="timezone of your region", meeting_admin_role="choose the role that can control meeting")
     @app_commands.choices(timezone=[
         app_commands.Choice(name="GMT+0", value="Etc/GMT-0"),
         app_commands.Choice(name="GMT+1", value="Etc/GMT-1"),
@@ -121,12 +121,17 @@ class MeetingCommand(commands.Cog):
     ])
     
     async def set_server_settings(self, interaction: discord.Interaction, timezone: discord.app_commands.Choice[str], meeting_admin_role: discord.Role):
+        await interaction.response.defer()
         server_setting_coll = self.mongo_client.meeting.server_setting
         server_setting_doc = server_setting_coll.find_one({"guild_id": interaction.guild.id})
         async def create_server_setting(edit:bool):
             # create a category for meetings voice_channel and forum
             meeting_category = await interaction.guild.create_category("meeting")
-            forum_channel = await meeting_category.create_forum("meeting")
+            try:
+                forum_channel = await meeting_category.create_forum("meeting")
+            except discord.errors.HTTPException:
+                await error.error_message(interaction, error="create forum error", description="Please make sure that you have enabled the community feature.", mode="follow")
+                return "error"
             # create a thread to explain how to use the forum
             thread, thread_message = await forum_channel.create_thread(name="How to use this?", content="- Buttons\n - roll call: Do a roll call for the members in voice channel. (will be create after meeting start) \n - end: End meeting.\n\n- Meeting Info Embed\n - title: The meeting title.\n - start time: when the meeting will start.\n - participate role: The role that you want those member to participate this meeting.\n - meeting thread: The meeting thread that has buttons and data will be sent.\n - footer: The meeting _id.\n\n- Embed Colors\n - yellow: ⏳ pending\n - green: 🔄 in progress\n - red: ✅ finished")
             await thread.edit(pinned=True)
@@ -147,38 +152,44 @@ class MeetingCommand(commands.Cog):
                     "forum_tags_id": tag_ids,
                     "admin_role_id": meeting_admin_role.id
                 }
-
-            # save server settings to database
-            if edit:
-                server_setting_coll.update_one({"guild_id": interaction.guild.id}, {"$set": server_setting_doc})
-            else:
-                server_setting_coll.insert_one(server_setting_doc)
-        
+            
             # send message
             embed = discord.Embed(title="Server Settings", color=discord.Color.blue())
             embed.add_field(name="timezone", value=timezone.value, inline=False)
             embed.add_field(name="meeting category", value=meeting_category.mention, inline=False)
             embed.add_field(name="meeting forum channel", value=forum_channel.mention, inline=False)
             embed.add_field(name="meeting admin role", value=meeting_admin_role.mention, inline=False)
+
+            # save server settings to database
             if edit:
-                await interaction.edit_original_response(embed=embed, view=None)
+                server_setting_coll.update_one({"guild_id": interaction.guild.id}, {"$set": server_setting_doc})
+                await interaction.edit_original_response(content=None, embed=embed, view=None)
             else:
-                await interaction.response.send_message(embed=embed)
+                server_setting_coll.insert_one(server_setting_doc)
+                await interaction.edit_original_response(content=None, embed=embed)
             
         if server_setting_doc == None:
-            await create_server_setting(edit=False)
+            await interaction.followup.send("processing...", ephemeral=True)
+            if await create_server_setting(edit=False) == "error":
+                return
+            await interaction.followup.send("Server settings has been set.", ephemeral=True)
+
         else:
-            async def confirm(interaction: discord.Interaction):
+            async def confirm(interaction_button: discord.Interaction):
+                await interaction_button.response.defer()
                 meeting_coll = self.mongo_client.meeting.meeting
-                meeting_coll.delete_many({"guild_id": interaction.guild.id})
-                await create_server_setting(edit=True)
+                meeting_coll.delete_many({"guild_id": interaction_button.guild.id})
+                await interaction_button.followup.send("processing...", ephemeral=True)
+                if await create_server_setting(edit=True) == "error":
+                    return
+                await interaction_button.followup.send("Server settings has been set.", ephemeral=True)
 
             embed = discord.Embed(title="Are you sure?", description="If you set server settings again, meetings that you created will be deleted.", color=discord.Color.blue())
             view = View()
             button1 = Button(style=discord.ButtonStyle.green, label="confirm")
             button1.callback = confirm
             view.add_item(button1)
-            await interaction.response.send_message(embed=embed, view=view)
+            await interaction.followup.send(embed=embed, view=view, ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(MeetingCommand(bot))
