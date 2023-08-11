@@ -91,7 +91,6 @@ class MeetingCommand(commands.Cog):
         # send embed
         await interaction.followup.send(embed=embed)
     
-    @app_commands.checks.has_permissions(administrator=True)
     @app_commands.command(name="set_server_settings", description="set server settings")
     @app_commands.describe(timezone="timezone of your region", meeting_admin_role="choose the role that can control meeting")
     @app_commands.choices(timezone=[
@@ -126,12 +125,16 @@ class MeetingCommand(commands.Cog):
         server_setting_coll = self.mongo_client.meeting.server_setting
         server_setting_doc = server_setting_coll.find_one({"guild_id": interaction.guild.id})
         async def create_server_setting(edit:bool):
+            # check if the user is admin of the server
+            if not interaction.user.guild_permissions.administrator:
+                await error.error_message(interaction, error="permission error", description="You need to be the admin of this server to use this command.")
+                return "error"
             # create a category for meetings voice_channel and forum
             meeting_category = await interaction.guild.create_category("meeting")
             try:
                 forum_channel = await meeting_category.create_forum("meeting")
-            except discord.errors.HTTPException:
-                await error.error_message(interaction, error="create forum error", description="Please make sure that you have enabled the community feature.", mode="follow")
+            except Exception:
+                await error.error_message(interaction, error="create forum error", description="Please make sure that you have enabled the community feature.")
                 return "error"
             # create a thread to explain how to use the forum
             file = discord.File("images/meeting_lifecycle.png", description="lifecycle of a meeting")
