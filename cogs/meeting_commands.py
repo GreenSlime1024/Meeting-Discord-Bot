@@ -34,6 +34,7 @@ class MeetingCommand(commands.Cog):
     )
     @app_commands.describe(title="title of the meeting", hour_local="hour that meeting will starts at (24-hour)", minute_local="minute that meeting will starts at (24-hour)", day_local="day that meeting will starts at (24-hour)", month_local="month that meeting will starts at (24-hour)", year_local="year that meeting will starts at (24-hour)", participate_role="members of the role that are asked to join the meeting", remind_time_ago="time before the meeting that the bot will remind the members to join the meeting")
     async def create_meeting(self, interaction: discord.Interaction, title: str, hour_local: int, minute_local: int, participate_role: discord.Role = None, remind_time_ago: discord.app_commands.Choice[int] = None ,day_local: int = None, month_local: int = None, year_local: int = None):
+        await interaction.response.defer()
         # check if the user has set guild settings
         meeting_db = self.mongo_client.meeting
         server_setting_coll = meeting_db.server_setting
@@ -88,7 +89,7 @@ class MeetingCommand(commands.Cog):
         embed = await meeting.create_meeting()
         embed.color = discord.Color.blue()
         # send embed
-        await interaction.response.send_message(embed=embed)
+        await interaction.followup.send(embed=embed)
     
     @app_commands.checks.has_permissions(administrator=True)
     @app_commands.command(name="set_server_settings", description="set server settings")
