@@ -274,5 +274,9 @@ class Meeting():
         thread = await self.bot.fetch_channel(thread_id)
         embed = discord.Embed(title="Meeting Reminder", description=f"Meeting will start <t:{int(self.start_timestamp_local)}:R>.")
         embed.color = discord.Color.blue()
-        await thread.send(embed=embed, content=f"{self.participate_role.mention}")
+
+        if self.participate_role == None:
+            await thread.send(embed=embed, content="@everyone")
+        else:
+            await thread.send(embed=embed, content=f"{self.participate_role.mention}")
         
