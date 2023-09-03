@@ -67,7 +67,6 @@ class Meeting_task(commands.Cog):
 
         # Check if the member joined a voice channel
         if after.channel is not None:
-            print(f"{member.display_name} joined {after.channel.name}.")
             # get meeting info from database
             meeting_doc = meeting_coll.find_one({"voice_channel_id": after.channel.id})
             if meeting_doc is None:
@@ -81,7 +80,6 @@ class Meeting_task(commands.Cog):
     
         # Check if the member left a voice channel
         if before.channel is not None:
-            print(f"{member.display_name} left {before.channel.name}.")
             meeting_doc = meeting_coll.find_one({"voice_channel_id": before.channel.id})
             if meeting_doc is None:
                 return
