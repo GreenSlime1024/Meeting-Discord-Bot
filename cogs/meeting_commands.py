@@ -182,6 +182,9 @@ class MeetingCommand(commands.Cog):
         else:
             async def confirm(interaction_button: discord.Interaction):
                 await interaction_button.response.defer()
+                if interaction_button.user != interaction.user:
+                    await interaction_button.followup.send("You are not the one who sent the command.", ephemeral=True)
+                    return
                 meeting_coll = self.mongo_client.meeting.meeting
                 meeting_coll.delete_many({"guild_id": interaction_button.guild.id})
                 await interaction_button.followup.send("processing...", ephemeral=True)
