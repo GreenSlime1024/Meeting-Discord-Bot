@@ -16,11 +16,11 @@ class Main(commands.Cog):
     async def help(self, interaction: discord.Interaction):
         embed_title = discord.Embed(title="How to create a meeting?", color=discord.Color.blue())
 
-        embed_sever_settings = discord.Embed(title="1. Set Server Settings", color=discord.Color.blue())
+        embed_sever_settings = discord.Embed(title="1. Set Server Settings", description="</set_server_settings:1121308554448617602>", color=discord.Color.blue())
         embed_sever_settings.add_field(name="[timezone]", value="timezone of your region", inline=False)
         embed_sever_settings.add_field(name="[meeting_admin_role]", value="choose the role that can control meeting", inline=False)
 
-        embed_create_meeting = discord.Embed(title="2. Create a Meeting", color=discord.Color.blue())
+        embed_create_meeting = discord.Embed(title="2. Create a Meeting", description="</create_meeting:1101520045449957467>", color=discord.Color.blue())
         embed_create_meeting.add_field(name="[hour_local]", value="hour that meeting will starts at (24-hour)", inline=False)
         embed_create_meeting.add_field(name="[minute_local]", value="minute that meeting will starts at (24-hour)", inline=False)
         embed_create_meeting.add_field(name="(day_local)", value="day that meeting will starts at (24-hour)", inline=False)
@@ -35,17 +35,14 @@ class Main(commands.Cog):
     async def ping(self, interaction: discord.Interaction):
         await interaction.response.send_message(f"pong ({round(self.bot.latency*1000)}ms)")
 
-    @app_commands.command(name="author", description="check author's blog")
-    async def author(self, interaction: discord.Interaction):
-        await interaction.response.send_message("https://greenslime1024.github.io/")
-
-    @app_commands.command(name="github-repo", description="check this bot's github repo")
-    async def repo(self, interaction: discord.Interaction):
-        await interaction.response.send_message("https://github.com/GreenSlime1024/Distance-Learning-Discord-Bot")
-
-    @app_commands.command(name="support-server", description="check this bot's support server")
-    async def support_server(self, interaction: discord.Interaction):
-        await interaction.response.send_message("https://discord.gg/CVUjGJT94b")
+    @app_commands.command(name="about", description="check this bot's info")
+    async def about(self, interaction: discord.Interaction):
+        embed = discord.Embed(title="About This Bot", color=discord.Color.blue())
+        embed.set_thumbnail(url="https://raw.githubusercontent.com/GreenSlime1024/Distance-Learning-Discord-Bot/main/images/avatar.png")
+        embed.add_field(name="Author", value="GreenSlime1024", inline=False)
+        embed.add_field(name="Github Repo", value="https://github.com/GreenSlime1024/Distance-Learning-Discord-Bot", inline=False)
+        embed.add_field(name="Support Server", value="https://discord.gg/vjJB8zXsDW", inline=False)
+        await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="guild", description="check the guilds where I am in")
     async def guild(self, interaction: discord.Interaction):
