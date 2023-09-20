@@ -136,6 +136,9 @@ class MeetingCommand(commands.Cog):
             except Exception:
                 await error.error_message(interaction, error="create forum error", description="Please make sure that you have enabled the community feature.")
                 return "error"
+            # set permission for the forum
+            await forum_channel.set_permissions(interaction.guild.default_role, send_messages=False)
+            await forum_channel.set_permissions(interaction.guild.me, send_messages=True)
             # create a thread to explain how to use the forum
             file = discord.File("images/meeting_lifecycle.png", description="lifecycle of a meeting")
             thread, thread_message = await forum_channel.create_thread(name="About a Meeting Thread", file=file,content="# About a Meeting Thread\nBot will create one for the meeting after user use </create_meeting:1101520045449957467>\n\n> ## Buttons\n> ### roll call\n> Do a roll call for the members in voice channel. (will be enable after meeting start)\n> ### end\n> End meeting.\n> ## Meeting Info Embed\n> ### title\n> The meeting title.\n> ### start time\n> when the meeting will start.\n> ### participate role\n> The role that you want those member to participate this meeting.\n> ### meeting thread\n> The meeting thread that has buttons and data will be sent.\n> ### footer\n> The meeting _id.\n> ### colors\n> - Yellow\n> :hourglass_flowing_sand: pending\n> - Green\n> :arrows_counterclockwise: in progress\n> - Red\n> :white_check_mark: finished\n\n# The image below shows lifecycle of a meeting")
@@ -147,7 +150,7 @@ class MeetingCommand(commands.Cog):
             for tag_info in tag_infos:
                 tag = await forum_channel.create_tag(name=tag_info[0], emoji=tag_info[1])
                 tag_ids[tag_info[0]] = tag.id
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.01)
         
             server_setting_doc = {
                     "guild_id": interaction.guild.id,
