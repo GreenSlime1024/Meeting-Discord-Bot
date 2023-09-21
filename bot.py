@@ -7,7 +7,7 @@ import pymongo
 
 def create_require_json():
     if os.path.exists("not_token.json"):
-        print("not_token.json already exists.")
+        return True
     else:
         data = {
             "TOKEN": "your token",
@@ -15,7 +15,7 @@ def create_require_json():
         }
         with open("not_token.json", "w") as jfile:
             json.dump(data, jfile, indent=4)
-        print("Please fill the require data in not_token.json. Then run this file again.")
+        return False
 
 
 class MyBot(commands.Bot):
@@ -34,11 +34,12 @@ class MyBot(commands.Bot):
             if filename.endswith(".py"):
                 await self.load_extension(f"cogs.{filename[:-3]}")
 
-
-bot = MyBot()
-
 if __name__ == "__main__":
-    create_require_json()
-    with open("not_token.json", mode="r", encoding="utf8") as jfile:
-        jdata = json.load(jfile)
-    bot.run(jdata["TOKEN"])
+    if create_require_json():
+        print("not_token.json already exists.")
+        bot = MyBot()
+        with open("not_token.json", mode="r", encoding="utf8") as jfile:
+            jdata = json.load(jfile)
+        bot.run(jdata["TOKEN"])
+    else:
+        print("Please fill the require data in not_token.json. Then run this file again.")
