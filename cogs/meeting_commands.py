@@ -138,6 +138,7 @@ class MeetingCommand(commands.Cog):
                 return "error"
             # set permission for the forum
             await forum_channel.set_permissions(interaction.guild.default_role, send_messages=False)
+            await forum_channel.set_permissions(meeting_admin_role, send_messages=True)
             await forum_channel.set_permissions(interaction.guild.me, send_messages=True)
             # create a thread to explain how to use the forum
             file = discord.File("images/meeting_lifecycle.png", description="lifecycle of a meeting")
