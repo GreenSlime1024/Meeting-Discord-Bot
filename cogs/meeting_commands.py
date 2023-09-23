@@ -146,11 +146,11 @@ class MeetingCommand(commands.Cog):
             await thread.edit(pinned=True)
             await thread_message.pin()
             # create tags for meeting forum
-            tag_infos = [["pending", "⏳"], ["in_progress", "🔄"], ["finished", "✅"]]
-            tag_ids = {}
-            for tag_info in tag_infos:
+            tags_info = [["pending", "⏳"], ["in_progress", "🔄"], ["finished", "✅"]]
+            tags_id = {}
+            for tag_info in tags_info:
                 tag = await forum_channel.create_tag(name=tag_info[0], emoji=tag_info[1])
-                tag_ids[tag_info[0]] = tag.id
+                tags_id[tag_info[0]] = tag.id
                 await asyncio.sleep(0.01)
         
             server_setting_doc = {
@@ -158,7 +158,7 @@ class MeetingCommand(commands.Cog):
                     "timezone": timezone.value,
                     "category_id": meeting_category.id,
                     "forum_channel_id": forum_channel.id,
-                    "forum_tags_id": tag_ids,
+                    "forum_tags_id": tags_id,
                     "admin_role_id": meeting_admin_role.id
                 }
             
