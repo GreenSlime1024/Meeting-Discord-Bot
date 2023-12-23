@@ -183,7 +183,7 @@ class Meeting():
         pending_tag_id = forum_tags_id["pending"]
         pending_tag = forum_channel.get_tag(pending_tag_id)
         # create thread at forum channel
-        thread, thread_message = await forum_channel.create_thread(name=f"{self.title} _id={self._id}", view=self.view, embed=self.embed, content="Meeting log will be sent here.", auto_archive_duration=1440, applied_tags=[pending_tag])
+        thread, thread_message = await forum_channel.create_thread(name=self.title, view=self.view, embed=self.embed, content="Meeting log will be sent here.", auto_archive_duration=1440, applied_tags=[pending_tag])
         # pin thread message that contains buttons and embed
         await thread_message.pin()
         # add thread and meeting _id to embed
