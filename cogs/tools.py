@@ -38,10 +38,8 @@ class Main(commands.Cog):
     @app_commands.command(name="about", description="check this bot's info")
     async def about(self, interaction: discord.Interaction):
         embed = discord.Embed(title="About This Bot", color=discord.Color.blue())
-        embed.set_thumbnail(url="https://raw.githubusercontent.com/GreenSlime1024/Distance-Learning-Discord-Bot/main/images/avatar.png")
         embed.add_field(name="Author", value="GreenSlime1024", inline=False)
-        embed.add_field(name="Github Repo", value="https://github.com/GreenSlime1024/Distance-Learning-Discord-Bot", inline=False)
-        embed.add_field(name="Support Server", value="https://discord.gg/vjJB8zXsDW", inline=False)
+        embed.add_field(name="Github Repo", value="https://github.com/GreenSlime1024/Meeting-Discord-Bot", inline=False)
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="guild", description="check the guilds where I am in")

@@ -1,7 +1,7 @@
-# Distance-Learning-Discord-Bot
+# Meeting-Discord-Bot
 
 ## About The Project
-This is a Discord bot that can be used to help teachers and students use Discord as a distance learning platform.
+This is a Discord bot that can be used to help people meet online.
 
 ## Features
 ### 預定會議時間
@@ -49,7 +49,7 @@ To get a local copy up and running follow these simple steps.
 
 1. Clone the repo
    ```sh
-   git clone https://github.com/GreenSlime1024/Distance-Learning-Discord-Bot.git
+   git clone https://github.com/GreenSlime1024/Meeting-Discord-Bot.git
     ```
 
 2. Install pip packages
