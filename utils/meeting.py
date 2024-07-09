@@ -1,14 +1,9 @@
 import discord
-from discord.ext import commands
 from pymongo import MongoClient
 from utils.error import error
 from discord.ui import Button, View
-import json
-import asyncio
 import datetime
 import pytz
-import os
-import uuid
 from bot import MyBot
 from bson.objectid import ObjectId
 
@@ -47,10 +42,10 @@ class Meeting():
             server_setting_doc = server_setting_coll.find_one({"guild_id": self.guild.id})
             mdmin_role_id = server_setting_doc["admin_role_id"]
             admin_role = self.guild.get_role(mdmin_role_id)
+            # check if user is meeting admin
             if admin_role not in interaction.user.roles:
                 await error.error_message(interaction, "you are not meeting admin")
                 return
-            # check if user is meeting admin
             await interaction.response.defer()
             # create absent and attend members list
             absent_members = []
@@ -267,7 +262,7 @@ class Meeting():
             embed.color = discord.Color.red()
         await thread.send(embed=embed)
 
-    async def auto_remind(self):
+    async def remind(self):
         meeting_coll = self.mongo_client.meeting.meeting
         meeting_doc = meeting_coll.find_one({"_id": self._id})
         thread_id = meeting_doc["thread_id"]
@@ -275,7 +270,7 @@ class Meeting():
         embed = discord.Embed(title="Meeting Reminder", description=f"Meeting will start <t:{int(self.start_timestamp_local)}:R>.")
         embed.color = discord.Color.blue()
 
-        if self.participate_role == None:
+        if self.participate_role == None or self.participate_role.name == "@everyone":
             await thread.send(embed=embed, content="@everyone")
         else:
             await thread.send(embed=embed, content=f"{self.participate_role.mention}")
