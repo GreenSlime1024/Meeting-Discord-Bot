@@ -149,7 +149,7 @@ class Meeting_task(commands.Cog):
         for meeting_doc in meeting_coll.find({"remind_timestamp_UTC": int(now_timestamp_UTC), "status": "pending"}):
             server_setting_doc = server_setting_coll.find_one({"guild_id": meeting_doc["guild_id"]})
             meeting = await self.get_meeting_info(meeting_doc, server_setting_doc)
-            meeting_wait_remind.append(meeting.auto_remind())
+            meeting_wait_remind.append(meeting.remind())
         await asyncio.gather(*meeting_wait_remind)
 
 async def setup(bot):
