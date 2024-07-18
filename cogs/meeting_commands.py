@@ -133,7 +133,7 @@ class MeetingCommands(commands.Cog):
 # About a Meeting Thread
 Bot will create one for the meeting after user use </create_meeting:1101520045449957467>
 
-## Buttons (Will be enabled after the meeting starts)
+## Buttons (will be enabled after the meeting starts)
 - Roll Call
 Do a roll call for the members in voice channel
 - End Meeting

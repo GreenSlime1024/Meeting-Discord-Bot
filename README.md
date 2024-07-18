@@ -26,7 +26,7 @@ After using /create_meeting, the bot will create dedicated threads for each meet
 
 - Status tags
 
-The bot will label threads with status tags (pending, in_progress, finished), allowing forum channels to quickly find meetings based on the desired tags.
+The bot will label threads with status tags (Pending, In Progress, Finished), allowing forum channels to quickly find meetings based on the desired tags.
 
 - Roll call feature
 
@@ -60,9 +60,9 @@ To get a local copy up and running follow these simple steps.
     
 ## Run The Bot
 
-1. Fill in the `token.json` file with your discord bot token and mongodb connection string
+1. Fill in the `token.json` with your discord bot token and mongodb connection string
 
-2. Rename the `token.json` file to `not_token.json` 🤓
+2. Rename the `token.json` to `not_token.json` ~~(so that hackers can't easily find your token 🤓)~~
 
 3. Run the bot
    ```sh
