@@ -7,7 +7,7 @@ import asyncio
 import datetime
 
 
-class Meeting_task(commands.Cog):
+class MeetingTask(commands.Cog):
     def __init__(self, bot: MyBot):
         self.bot = bot
         self.server_setting_coll = self.bot.mongo_client["meeting"]["server_setting"]
@@ -87,4 +87,4 @@ class Meeting_task(commands.Cog):
 
 
 async def setup(bot: MyBot):
-    await bot.add_cog(Meeting_task(bot))
+    await bot.add_cog(MeetingTask(bot))
