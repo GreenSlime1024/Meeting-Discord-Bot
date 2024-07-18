@@ -169,7 +169,7 @@ Finished :white_check_mark:
             "guild_id": interaction.guild.id,
             "timezone": timezone.value,
             "category_id": meeting_category.id,
-            "forum_channel_id": forum_channel.id,
+            "forum_id": forum_channel.id,
             "tags_id": tags_id,
             "admin_role_id": meeting_admin_role.id
         }

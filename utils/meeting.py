@@ -14,8 +14,8 @@ class Meeting():
 
     async def create_meeting(self, guild_id:int, title:str, start_timestamp:int, participate_role_id:int, remind_timestamp:Union[int, None]=None):
         server_setting_doc:dict = await self.server_setting_coll.find_one({"guild_id": guild_id})
-        forum_channel_id:int = server_setting_doc["forum_channel_id"]
-        forum_channel:discord.ForumChannel = self.bot.get_channel(forum_channel_id)
+        forum_id:int = server_setting_doc["forum_id"]
+        forum_channel:discord.ForumChannel = self.bot.get_channel(forum_id)
         pending_tag_id:int = server_setting_doc["tags_id"]["pending"]
         pending_tag:discord.ForumTag = forum_channel.get_tag(pending_tag_id)
         guild = self.bot.get_guild(guild_id)
@@ -85,8 +85,8 @@ class Meeting():
 
         tags_id:int = server_setting_doc["tags_id"]
         in_progress_tag_id:int = tags_id["in_progress"]
-        forum_channel_id:int = server_setting_doc["forum_channel_id"]
-        forum_channel:discord.ForumChannel = self.bot.get_channel(forum_channel_id)
+        forum_id:int = server_setting_doc["forum_id"]
+        forum_channel:discord.ForumChannel = self.bot.get_channel(forum_id)
         in_progress_tag:discord.ForumTag = forum_channel.get_tag(in_progress_tag_id)
         await thread.edit(applied_tags=[in_progress_tag])
         await self.meeting_coll.update_one({"_id": self._id}, {"$set": {"status": "in_progress", "voice_channel_id": voice_channel.id}})
@@ -122,8 +122,8 @@ class Meeting():
 
         tags_id = server_setting_doc["tags_id"]
         ended_tag_id = tags_id["finished"]
-        forum_channel_id = server_setting_doc["forum_channel_id"]
-        forum_channel:discord.ForumChannel = self.bot.get_channel(forum_channel_id)
+        forum_id = server_setting_doc["forum_id"]
+        forum_channel:discord.ForumChannel = self.bot.get_channel(forum_id)
         finished_tag:discord.ForumTag = forum_channel.get_tag(ended_tag_id)
         await thread.edit(applied_tags=[finished_tag])
         await thread_message.edit(embed=embed, view=view)
