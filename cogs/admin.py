@@ -43,5 +43,5 @@ class Admin(commands.Cog):
         await interaction.response.send_message(f"`{extension}` unloaded", ephemeral=False)
 
 
-async def setup(bot):
+async def setup(bot: MyBot):
     await bot.add_cog(Admin(bot))

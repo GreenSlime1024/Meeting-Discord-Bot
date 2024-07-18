@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands, tasks
-import asyncio
 from bot import MyBot
 
 
@@ -12,7 +11,7 @@ class Activity(commands.Cog):
 
     def __init__(self, bot: MyBot):
         self.bot = bot
-        self.activitys = ["運作平台: Eri24816 租的 server", "Made By GreenSlime1024", "核心功能已完成", "但還有細節和新功能待開發"]
+        self.activitys = ["running on eri24816's bad server", "made by greenslime1024", "/create_meeting", "/set_server_settings"]
         self.index = 0
 
     @tasks.loop(seconds=15)
@@ -22,5 +21,6 @@ class Activity(commands.Cog):
         if self.index == len(self.activitys)-1:
             self.index = 0
 
-async def setup(bot):
+
+async def setup(bot: MyBot):
     await bot.add_cog(Activity(bot))
