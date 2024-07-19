@@ -35,10 +35,6 @@ class Meeting():
         view = Meeting_Buttons()
         thread, thread_message = await forum_channel.create_thread(name=title, view=view, applied_tags=[pending_tag], auto_archive_duration=1440)
         embed.add_field(name="Thread", value=thread.mention, inline=False)
-        await asyncio.gather(
-            thread_message.edit(embed=embed),
-            thread_message.pin()
-        )
 
         meeting = {
             "_id": self._id,
@@ -51,7 +47,13 @@ class Meeting():
             "remind_timestamp": remind_timestamp,
             "idle": 0,
         }
-        await self.meeting_coll.insert_one(meeting)
+
+        await asyncio.gather(
+            thread_message.edit(embed=embed),
+            thread_message.pin(),
+            self.meeting_coll.insert_one(meeting)
+        )
+
         print(f"Meeting {self._id} created")
         return embed
     
@@ -81,15 +83,18 @@ class Meeting():
         embed = thread_message.embeds[0]
         embed.color = discord.Color.green()
         embed.add_field(name="Voice Channel", value=voice_channel.mention, inline=False)
-        await thread_message.edit(embed=embed, view=view)
 
         tags_id:int = server_setting_doc["tags_id"]
         in_progress_tag_id:int = tags_id["in_progress"]
         forum_id:int = server_setting_doc["forum_id"]
         forum_channel:discord.ForumChannel = self.bot.get_channel(forum_id)
         in_progress_tag:discord.ForumTag = forum_channel.get_tag(in_progress_tag_id)
-        await thread.edit(applied_tags=[in_progress_tag])
-        await self.meeting_coll.update_one({"_id": self._id}, {"$set": {"status": "in_progress", "voice_channel_id": voice_channel.id}})
+
+        await asyncio.gather(
+            thread_message.edit(embed=embed, view=view),
+            thread.edit(applied_tags=[in_progress_tag]),
+            self.meeting_coll.update_one({"_id": self._id}, {"$set": {"status": "in_progress", "voice_channel_id": voice_channel.id}})
+        )
 
         print(f"Meeting {self._id} started")
 
@@ -114,8 +119,7 @@ class Meeting():
         view.stop()
 
         voice_channel_id:int = meeting_doc["voice_channel_id"]
-        voice_channel:discord.VoiceChannel = self.bot.get_channel(voice_channel_id)
-        await voice_channel.delete()    
+        voice_channel:discord.VoiceChannel = self.bot.get_channel(voice_channel_id) 
 
         embed = thread_message.embeds[0]
         embed.color = discord.Color.red()
@@ -125,9 +129,13 @@ class Meeting():
         forum_id = server_setting_doc["forum_id"]
         forum_channel:discord.ForumChannel = self.bot.get_channel(forum_id)
         finished_tag:discord.ForumTag = forum_channel.get_tag(ended_tag_id)
-        await thread.edit(applied_tags=[finished_tag])
-        await thread_message.edit(embed=embed, view=view)
-        await self.meeting_coll.delete_one({"_id": self._id})
+        
+        await asyncio.gather(
+            voice_channel.delete(),
+            thread.edit(applied_tags=[finished_tag]),
+            thread_message.edit(embed=embed, view=view),
+            self.meeting_coll.delete_one({"_id": self._id})
+        )
 
         print(f"Meeting {self._id} ended")
 
