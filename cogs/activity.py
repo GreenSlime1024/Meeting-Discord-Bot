@@ -18,7 +18,7 @@ class Activity(commands.Cog):
     async def activity_task(self):
         await self.bot.change_presence(activity=discord.Game(name=self.activitys[self.index]))
         self.index += 1
-        if self.index == len(self.activitys)-1:
+        if self.index == len(self.activitys):
             self.index = 0
 
 
