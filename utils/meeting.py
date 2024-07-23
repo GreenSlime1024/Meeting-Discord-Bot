@@ -144,7 +144,11 @@ class Meeting():
         guild_id:int = meeting_doc["guild_id"]
         guild:discord.Guild = self.bot.get_guild(guild_id)
         thread_id:int = meeting_doc["thread_id"]
-        thread:discord.Thread = self.bot.get_channel(thread_id)
+        thread:discord.Thread | None = self.bot.get_channel(thread_id)
+        if thread is None:
+            self.meeting_coll.delete_one({"_id": self._id})
+            print(f"Meeting {self._id} deleted")
+            return
         start_timestamp:int = meeting_doc["start_timestamp"]
         embed = discord.Embed(title="Meeting Reminder", description=f"Meeting will start <t:{start_timestamp}:R>.", color=discord.Color.blue())
         participate_role_id:int = meeting_doc["participate_role_id"]
