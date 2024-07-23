@@ -222,3 +222,4 @@ class Meeting_Buttons(discord.ui.View):
         bot = interaction.client
         meeting = Meeting(bot, ObjectId(interaction.message.embeds[0].footer.text))
         await meeting.end_meeting()
+        await interaction.response.send_message("Meeting ended.", ephemeral=True)
