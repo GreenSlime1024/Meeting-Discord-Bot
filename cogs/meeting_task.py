@@ -20,7 +20,7 @@ class MeetingTask(commands.Cog):
         meetings_to_start = []
         async for meeting_doc in self.meeting_coll.find({"status": "pending"}):
             meeting = Meeting(bot=self.bot, _id=ObjectId(meeting_doc["_id"]))
-            start_timestamp = meeting_doc["start_timestamp"]
+            start_timestamp:int = meeting_doc["start_timestamp"]
             now_timestamp = int(datetime.datetime.now().replace(second=0, microsecond=0).timestamp())
             if start_timestamp <= now_timestamp:
                 meetings_to_start.append(meeting.start_meeting())
@@ -35,9 +35,9 @@ class MeetingTask(commands.Cog):
             await asyncio.gather(self.auto_start(), self.auto_end(), self.auto_remind())
 
     async def auto_start(self):
-        now_timestamp = datetime.datetime.now().replace(microsecond=0).timestamp()
+        now_timestamp = int(datetime.datetime.now().replace(microsecond=0).timestamp())
         meetings_to_start = []
-        async for meeting_doc in self.meeting_coll.find({"start_timestamp": int(now_timestamp), "status": "pending"}):
+        async for meeting_doc in self.meeting_coll.find({"start_timestamp": now_timestamp, "status": "pending"}):
             meeting = Meeting(bot=self.bot, _id=ObjectId(meeting_doc["_id"]))
             meetings_to_start.append(meeting.start_meeting())
         await asyncio.gather(*meetings_to_start)
@@ -45,8 +45,8 @@ class MeetingTask(commands.Cog):
     async def auto_end(self):
         meetings_to_end = []
         async for meeting_doc in self.meeting_coll.find({"status": "in_progress"}):
-            voice_channel = self.bot.get_channel(meeting_doc["voice_channel_id"])
-            idle = meeting_doc["idle"]
+            voice_channel:discord.VoiceChannel = self.bot.get_channel(meeting_doc["voice_channel_id"])
+            idle:int = meeting_doc["idle"]
 
             if len(voice_channel.members) == 0:
                 idle += 1
@@ -60,8 +60,8 @@ class MeetingTask(commands.Cog):
 
     async def auto_remind(self):
         meeting_wait_remind = []
-        now_timestamp = datetime.datetime.now().replace(microsecond=0).timestamp()
-        async for meeting_doc in self.meeting_coll.find({"remind_timestamp": int(now_timestamp), "status": "pending"}):
+        now_timestamp = int(datetime.datetime.now().replace(microsecond=0).timestamp())
+        async for meeting_doc in self.meeting_coll.find({"remind_timestamp": now_timestamp, "status": "pending"}):
             meeting = Meeting(bot=self.bot, _id=ObjectId(meeting_doc["_id"]))
             meeting_wait_remind.append(meeting.remind_meeting())
         await asyncio.gather(*meeting_wait_remind)
@@ -74,16 +74,14 @@ class MeetingTask(commands.Cog):
         if after.channel:
             meeting_doc = await self.meeting_coll.find_one({"voice_channel_id": after.channel.id})
             if meeting_doc:
-                action = "join"
                 meeting = Meeting(bot=self.bot, _id=ObjectId(meeting_doc["_id"]))
-                await meeting.join_leave_log(member, action)
+                await meeting.join_leave_log(member, "join")
     
         if before.channel:
             meeting_doc = await self.meeting_coll.find_one({"voice_channel_id": before.channel.id})
             if meeting_doc:
-                action = "leave"
                 meeting = Meeting(bot=self.bot, _id=ObjectId(meeting_doc["_id"]))
-                await meeting.join_leave_log(member, action)
+                await meeting.join_leave_log(member, "leave")
 
 
 async def setup(bot: MyBot):
