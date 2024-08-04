@@ -17,12 +17,14 @@ class MeetingTask(commands.Cog):
     async def on_ready(self):
         print("MeetingTask cog loaded.")
 
+        starts = []
         async for meeting_doc in self.meeting_coll.find({"status": "pending"}):
             meeting = Meeting(bot=self.bot, _id=ObjectId(meeting_doc["_id"]))
             start_timestamp:int = meeting_doc["start_timestamp"]
             now_timestamp = int(datetime.datetime.now().replace(second=0, microsecond=0).timestamp())
             if start_timestamp <= now_timestamp:
-                await meeting.start()
+                starts.append(meeting.start())
+        await asyncio.gather(*starts)
 
         self.auto_tasks.start()
     
@@ -33,12 +35,15 @@ class MeetingTask(commands.Cog):
             asyncio.gather(self.auto_start(), self.auto_end(), self.auto_remind())
 
     async def auto_start(self):
+        starts = []
         now_timestamp = int(datetime.datetime.now().replace(microsecond=0).timestamp())
         async for meeting_doc in self.meeting_coll.find({"start_timestamp": now_timestamp, "status": "pending"}):
             meeting = Meeting(bot=self.bot, _id=ObjectId(meeting_doc["_id"]))
             await meeting.start()
+        await asyncio.gather(*starts)
 
     async def auto_end(self):
+        ends = []
         async for meeting_doc in self.meeting_coll.find({"status": "in_progress"}):
             voice_channel:discord.VoiceChannel = self.bot.get_channel(meeting_doc["voice_channel_id"])
             idle:int = meeting_doc["idle"]
@@ -50,13 +55,16 @@ class MeetingTask(commands.Cog):
             if idle >= 10:
                 self.meeting_coll.update_one({"_id": meeting_doc["_id"]}, {"$set": {"status": "finished"}})
                 meeting = Meeting(bot=self.bot, _id=ObjectId(meeting_doc["_id"]))
-                await meeting.end()
+                ends.append(meeting.end())
+        await asyncio.gather(*ends)
 
     async def auto_remind(self):
+        reminds = []
         now_timestamp = int(datetime.datetime.now().replace(microsecond=0).timestamp())
         async for meeting_doc in self.meeting_coll.find({"remind_timestamp": now_timestamp, "status": "pending"}):
             meeting = Meeting(bot=self.bot, _id=ObjectId(meeting_doc["_id"]))
-            await meeting.remind()
+            reminds.append(meeting.remind())
+        await asyncio.gather(*reminds)
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
