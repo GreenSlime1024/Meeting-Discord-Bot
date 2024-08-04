@@ -73,7 +73,7 @@ class MeetingCommands(commands.Cog):
 
         _id = ObjectId()
         meeting = Meeting(bot=self.bot, _id=_id)
-        embed = await meeting.create_meeting(guild_id=interaction.guild_id, title=title, start_timestamp=start_timestamp, remind_timestamp=remind_timestamp, participate_role_id=participate_role.id if participate_role != None else interaction.guild_id)
+        embed = await meeting.create(guild_id=interaction.guild_id, title=title, start_timestamp=start_timestamp, remind_timestamp=remind_timestamp, participate_role_id=participate_role.id if participate_role != None else interaction.guild_id)
         embed.color = discord.Color.blue()
 
         await interaction.followup.send(embed=embed)
