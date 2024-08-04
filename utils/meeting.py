@@ -3,6 +3,7 @@ from bot import MyBot
 from bson.objectid import ObjectId
 from typing import Union
 import asyncio
+from motor import motor_asyncio as motor
 
 
 class Meeting():
@@ -12,7 +13,7 @@ class Meeting():
         self.server_setting_coll = self.bot.mongo_client["meeting"]["server_setting"]
         self.meeting_coll = self.bot.mongo_client["meeting"]["meeting"]
 
-    async def create_meeting(self, guild_id:int, title:str, start_timestamp:int, participate_role_id:int, remind_timestamp:Union[int, None]=None):
+    async def create(self, guild_id:int, title:str, start_timestamp:int, participate_role_id:int, remind_timestamp:Union[int, None]=None):
         server_setting_doc:dict = await self.server_setting_coll.find_one({"guild_id": guild_id})
         forum_id:int = server_setting_doc["forum_id"]
         forum_channel:discord.ForumChannel = self.bot.get_channel(forum_id)
@@ -57,108 +58,124 @@ class Meeting():
         print(f"Meeting {self._id} created")
         return embed
     
-    async def start_meeting(self):
-        meeting_doc:dict = await self.meeting_coll.find_one({"_id": self._id})
-        guild_id:int = meeting_doc["guild_id"]
-        server_setting_doc:dict = await self.server_setting_coll.find_one({"guild_id": guild_id})
-        thread_id:int = meeting_doc["thread_id"]
-        thread:discord.Thread | None = self.bot.get_channel(thread_id)
-        if thread is None:
-            self.meeting_coll.delete_one({"_id": self._id})
-            print(f"Meeting {self._id} deleted")
-            return
-        thread_message:discord.Message | None = thread.starter_message
-        if thread_message is None:
-            thread_message = await thread.fetch_message(thread_id)
+    async def start(self):
+        try:
+            meeting_doc:dict = await self.meeting_coll.find_one({"_id": self._id})
+            guild_id:int = meeting_doc["guild_id"]
+            server_setting_doc:dict = await self.server_setting_coll.find_one({"guild_id": guild_id})
+            thread_id:int = meeting_doc["thread_id"]
+            thread:discord.Thread | None = self.bot.get_channel(thread_id)
+            thread_message:discord.Message | None = thread.starter_message
+            if thread_message is None:
+                thread_message = await thread.fetch_message(thread_id)
 
-        view = Meeting_Buttons()
-        view.from_message(thread_message, timeout=None)
-        view.children[0].disabled = False
-        view.children[1].disabled = False
+            view = Meeting_Buttons()
+            view.from_message(thread_message, timeout=None)
+            view.children[0].disabled = False
+            view.children[1].disabled = False
+            await thread_message.edit(view=view)
 
-        category_id:int = server_setting_doc["category_id"]
-        category:discord.CategoryChannel = self.bot.get_channel(category_id)
-        voice_channel = await category.create_voice_channel(name=meeting_doc["title"])
+            category_id:int = server_setting_doc["category_id"]
+            category:discord.CategoryChannel = self.bot.get_channel(category_id)
+            voice_channel = await category.create_voice_channel(name=meeting_doc["title"])
 
-        embed = thread_message.embeds[0]
-        embed.color = discord.Color.green()
-        embed.add_field(name="Voice Channel", value=voice_channel.mention, inline=False)
+            embed = thread_message.embeds[0]
+            embed.color = discord.Color.green()
+            embed.add_field(name="Voice Channel", value=voice_channel.mention, inline=False)
+            await thread_message.edit(embed=embed),
 
-        tags_id:int = server_setting_doc["tags_id"]
-        in_progress_tag_id:int = tags_id["in_progress"]
-        forum_id:int = server_setting_doc["forum_id"]
-        forum_channel:discord.ForumChannel = self.bot.get_channel(forum_id)
-        in_progress_tag:discord.ForumTag = forum_channel.get_tag(in_progress_tag_id)
+            tags_id:int = server_setting_doc["tags_id"]
+            in_progress_tag_id:int = tags_id["in_progress"]
+            forum_id:int = server_setting_doc["forum_id"]
+            forum_channel:discord.ForumChannel = self.bot.get_channel(forum_id)
+            in_progress_tag:discord.ForumTag = forum_channel.get_tag(in_progress_tag_id)
+            await thread.edit(applied_tags=[in_progress_tag])
 
-        await asyncio.gather(
-            thread_message.edit(embed=embed, view=view),
-            thread.edit(applied_tags=[in_progress_tag]),
-            self.meeting_coll.update_one({"_id": self._id}, {"$set": {"status": "in_progress", "voice_channel_id": voice_channel.id}})
-        )
+            await self.meeting_coll.update_one({"_id": self._id}, {"$set": {"status": "in_progress", "voice_channel_id": voice_channel.id}})
 
-        print(f"Meeting {self._id} started")
+            print(f"Meeting {self._id} started")
 
-    async def end_meeting(self):
-        meeting_doc:dict = await self.meeting_coll.find_one({"_id": self._id})
-        guild_id:int = meeting_doc["guild_id"]
-        server_setting_doc:dict = await self.server_setting_coll.find_one({"guild_id": guild_id})
-        thread_id:int = meeting_doc["thread_id"]
-        thread:discord.Thread | None = self.bot.get_channel(thread_id)
-        if thread is None:
-            self.meeting_coll.delete_one({"_id": self._id})
-            print(f"Meeting {self._id} deleted")
-            return
-        thread_message:discord.Message | None = thread.starter_message
-        if thread_message is None:
-            thread_message = await thread.fetch_message(thread_id)
+        except Exception as e:
+            print(f"Meeing {self._id} failed to start: {e}")
+            thread_message:discord.Message | None = thread.starter_message
+            try:
+                await self.stop_view(thread_message)
+            except:
+                pass
+            await self.meeting_coll.delete_one({"_id": self._id})
 
-        view = Meeting_Buttons()
-        view.from_message(thread_message, timeout=None)
-        view.children[0].disabled = True
-        view.children[1].disabled = True
-        view.stop()
+    async def end(self):
+        try:
+            meeting_doc:dict = await self.meeting_coll.find_one({"_id": self._id})
+            guild_id:int = meeting_doc["guild_id"]
+            server_setting_doc:dict = await self.server_setting_coll.find_one({"guild_id": guild_id})
+            thread_id:int = meeting_doc["thread_id"]
+            thread:discord.Thread | None = self.bot.get_channel(thread_id)
 
-        voice_channel_id:int = meeting_doc["voice_channel_id"]
-        voice_channel:discord.VoiceChannel = self.bot.get_channel(voice_channel_id) 
+            thread_message:discord.Message | None = thread.starter_message
+            if thread_message is None:
+                thread_message = await thread.fetch_message(thread_id)
 
-        embed = thread_message.embeds[0]
-        embed.color = discord.Color.red()
+            view = Meeting_Buttons()
+            view.from_message(thread_message, timeout=None)
+            view.stop()
+            await thread_message.edit(view=view)
 
-        tags_id = server_setting_doc["tags_id"]
-        ended_tag_id = tags_id["finished"]
-        forum_id = server_setting_doc["forum_id"]
-        forum_channel:discord.ForumChannel = self.bot.get_channel(forum_id)
-        finished_tag:discord.ForumTag = forum_channel.get_tag(ended_tag_id)
-        
-        await asyncio.gather(
-            voice_channel.delete(),
-            thread.edit(applied_tags=[finished_tag]),
-            thread_message.edit(embed=embed, view=view),
-            self.meeting_coll.delete_one({"_id": self._id})
-        )
+            voice_channel_id:int = meeting_doc["voice_channel_id"]
+            voice_channel:discord.VoiceChannel = self.bot.get_channel(voice_channel_id) 
+            await voice_channel.delete()
 
-        print(f"Meeting {self._id} ended")
+            embed = thread_message.embeds[0]
+            embed.color = discord.Color.red()
+            await thread_message.edit(embed=embed)
 
-    async def remind_meeting(self):
-        meeting_doc:dict = await self.meeting_coll.find_one({"_id": self._id})
-        guild_id:int = meeting_doc["guild_id"]
-        guild:discord.Guild = self.bot.get_guild(guild_id)
-        thread_id:int = meeting_doc["thread_id"]
-        thread:discord.Thread | None = self.bot.get_channel(thread_id)
-        if thread is None:
-            self.meeting_coll.delete_one({"_id": self._id})
-            print(f"Meeting {self._id} deleted")
-            return
-        start_timestamp:int = meeting_doc["start_timestamp"]
-        embed = discord.Embed(title="Meeting Reminder", description=f"Meeting will start <t:{start_timestamp}:R>.", color=discord.Color.blue())
-        participate_role_id:int = meeting_doc["participate_role_id"]
-        participate_role = guild.get_role(participate_role_id)
+            tags_id = server_setting_doc["tags_id"]
+            ended_tag_id = tags_id["finished"]
+            forum_id = server_setting_doc["forum_id"]
+            forum_channel:discord.ForumChannel = self.bot.get_channel(forum_id)
+            finished_tag:discord.ForumTag = forum_channel.get_tag(ended_tag_id)
+            await thread.edit(applied_tags=[finished_tag])
+            
+            await self.meeting_coll.delete_one({"_id": self._id})
 
-        if participate_role.id == guild_id:
-            await thread.send(content="@everyone", embed=embed)
-        else:
-            await thread.send(content=participate_role.mention, embed=embed)
-        print(f"Meeting {self._id} reminded")
+            print(f"Meeting {self._id} ended")
+
+        except Exception as e:
+            print(f"Meeting {self._id} failed to end: {e}")
+            try:
+                await self.stop_view(thread_message)
+            except:
+                pass
+            await self.meeting_coll.delete_one({"_id": self._id})
+
+    async def remind(self):
+        try:
+            meeting_doc:dict = await self.meeting_coll.find_one({"_id": self._id})
+            guild_id:int = meeting_doc["guild_id"]
+            guild:discord.Guild = self.bot.get_guild(guild_id)
+            thread_id:int = meeting_doc["thread_id"]
+            thread:discord.Thread | None = self.bot.get_channel(thread_id)
+
+            start_timestamp:int = meeting_doc["start_timestamp"]
+            embed = discord.Embed(title="Meeting Reminder", description=f"Meeting will start <t:{start_timestamp}:R>.", color=discord.Color.blue())
+            participate_role_id:int = meeting_doc["participate_role_id"]
+            participate_role = guild.get_role(participate_role_id)
+
+            if participate_role.id == guild_id:
+                await thread.send(content="@everyone", embed=embed)
+            else:
+                await thread.send(content=participate_role.mention, embed=embed)
+
+            print(f"Meeting {self._id} reminded")
+
+        except Exception as e:
+            print(f"Meeting {self._id} failed to remind: {e}")
+            try:
+                thread_message:discord.Message | None = thread.starter_message
+                await self.stop_view(thread_message)
+            except:
+                pass
+            await self.meeting_coll.delete_one({"_id": self._id})
 
     async def join_leave_log(self, member:discord.Member, action:str):
         meeting_doc:dict = await self.meeting_coll.find_one({"_id": self._id})
@@ -206,6 +223,10 @@ class Meeting():
             embed.add_field(name="Absent", value=" ".join([member.mention for member in absent_members]), inline=False)
             await interaction.response.send_message(embed=embed)
 
+    async def stop_view(self, message:discord.Message):
+        view = Meeting_Buttons()
+        view.from_message(message, timeout=None)
+        view.stop()
 
 class Meeting_Buttons(discord.ui.View):
     def __init__(self, *, timeout: float | None = None):
@@ -213,13 +234,27 @@ class Meeting_Buttons(discord.ui.View):
 
     @discord.ui.button(label="Roll Call", style=discord.ButtonStyle.blurple, disabled=True, emoji="📝", custom_id="roll_call")
     async def roll_call(self, interaction: discord.Interaction, button: discord.ui.Button):
-        bot = interaction.client
-        meeting = Meeting(bot, ObjectId(interaction.message.embeds[0].footer.text))
-        await meeting.roll_call(interaction, button)
+        try:
+            bot = interaction.client
+            meeting_coll:motor.AsyncIOMotorCollection = bot.mongo_client["meeting"]["meeting"]
+            meeting_doc:dict = await meeting_coll.find_one({"thread_id": interaction.message.id})
+            _id:ObjectId = meeting_doc["_id"]
+            meeting = Meeting(bot, _id)
+            await meeting.roll_call(interaction, button)
+        except Exception:
+            self.stop()
+            await interaction.response.send_message("Roll call failed.", ephemeral=True)
 
     @discord.ui.button(label="End Meeting", style=discord.ButtonStyle.grey, disabled=True, emoji="📩", custom_id="end_meeting")
     async def end_meeting(self, interaction: discord.Interaction, button: discord.ui.Button):
-        bot = interaction.client
-        meeting = Meeting(bot, ObjectId(interaction.message.embeds[0].footer.text))
-        await meeting.end_meeting()
-        await interaction.response.send_message("Meeting ended.", ephemeral=True)
+        try:
+            bot = interaction.client
+            meeting_coll:motor.AsyncIOMotorCollection = bot.mongo_client["meeting"]["meeting"]
+            meeting_doc:dict = await meeting_coll.find_one({"thread_id": interaction.message.id})
+            _id:ObjectId = meeting_doc["_id"]
+            meeting = Meeting(bot, _id)
+            await meeting.end()
+            await interaction.response.send_message("Meeting ended.", ephemeral=True)
+        except Exception:
+            self.stop()
+            await interaction.response.send_message("Meeting failed to end.", ephemeral=True)
