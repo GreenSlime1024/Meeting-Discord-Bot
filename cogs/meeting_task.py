@@ -39,7 +39,7 @@ class MeetingTask(commands.Cog):
         now_timestamp = int(datetime.datetime.now().replace(microsecond=0).timestamp())
         async for meeting_doc in self.meeting_coll.find({"start_timestamp": now_timestamp, "status": "pending"}):
             meeting = Meeting(bot=self.bot, _id=ObjectId(meeting_doc["_id"]))
-            await meeting.start()
+            starts.append(meeting.start())
         await asyncio.gather(*starts)
 
     async def auto_end(self):
