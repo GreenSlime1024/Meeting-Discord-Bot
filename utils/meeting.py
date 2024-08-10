@@ -97,8 +97,8 @@ class Meeting():
 
         except Exception as e:
             print(f"Meeing {self._id} failed to start: {e}")
-            thread_message:discord.Message | None = thread.starter_message
             try:
+                thread_message:discord.Message | None = thread.starter_message
                 await self.stop_view(thread_message)
             except:
                 pass
