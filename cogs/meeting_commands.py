@@ -81,7 +81,7 @@ class MeetingCommands(commands.Cog):
     @app_commands.command(name="set_server_settings", description="set server settings")
     @app_commands.describe(timezone="timezone of your region", meeting_admin_role="choose the role that can control meeting")
     @app_commands.choices(timezone=[
-        app_commands.Choice(name="GMT+0", value="Etc/GMT-0"),
+        app_commands.Choice(name="UTC", value="UTC"),
         app_commands.Choice(name="GMT+1", value="Etc/GMT-1"),
         app_commands.Choice(name="GMT+2", value="Etc/GMT-2"),
         app_commands.Choice(name="GMT+3", value="Etc/GMT-3"),
@@ -94,17 +94,18 @@ class MeetingCommands(commands.Cog):
         app_commands.Choice(name="GMT+10", value="Etc/GMT-10"),
         app_commands.Choice(name="GMT+11", value="Etc/GMT-11"),
         app_commands.Choice(name="GMT+12", value="Etc/GMT-12"),
-        app_commands.Choice(name="GMT-11", value="Etc/GMT+11"),
-        app_commands.Choice(name="GMT-10", value="Etc/GMT+10"),
-        app_commands.Choice(name="GMT-9", value="Etc/GMT+9"),
-        app_commands.Choice(name="GMT-8", value="Etc/GMT+8"),
-        app_commands.Choice(name="GMT-7", value="Etc/GMT+7"),
-        app_commands.Choice(name="GMT-6", value="Etc/GMT+6"),
-        app_commands.Choice(name="GMT-5", value="Etc/GMT+5"),
-        app_commands.Choice(name="GMT-4", value="Etc/GMT+4"),
-        app_commands.Choice(name="GMT-3", value="Etc/GMT+3"),
-        app_commands.Choice(name="GMT-2", value="Etc/GMT+2"),
         app_commands.Choice(name="GMT-1", value="Etc/GMT+1"),
+        app_commands.Choice(name="GMT-2", value="Etc/GMT+2"),
+        app_commands.Choice(name="GMT-3", value="Etc/GMT+3"),
+        app_commands.Choice(name="GMT-4", value="Etc/GMT+4"),
+        app_commands.Choice(name="GMT-5", value="Etc/GMT+5"),
+        app_commands.Choice(name="GMT-6", value="Etc/GMT+6"),
+        app_commands.Choice(name="GMT-7", value="Etc/GMT+7"),
+        app_commands.Choice(name="GMT-8", value="Etc/GMT+8"),
+        app_commands.Choice(name="GMT-9", value="Etc/GMT+9"),
+        app_commands.Choice(name="GMT-10", value="Etc/GMT+10"),
+        app_commands.Choice(name="GMT-11", value="Etc/GMT+11"),
+        app_commands.Choice(name="GMT-12", value="Etc/GMT+12"),
     ])
     
     async def set_server_settings(self, interaction: discord.Interaction, timezone: discord.app_commands.Choice[str], meeting_admin_role: discord.Role):
