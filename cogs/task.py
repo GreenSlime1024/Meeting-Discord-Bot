@@ -7,7 +7,7 @@ import asyncio
 import datetime
 
 
-class MeetingTask(commands.Cog):
+class Task(commands.Cog):
     def __init__(self, bot: MyBot):
         self.bot = bot
         self.server_setting_coll = self.bot.mongo_client["meeting"]["server_setting"]
@@ -15,7 +15,7 @@ class MeetingTask(commands.Cog):
         
     @commands.Cog.listener()
     async def on_ready(self):
-        print("MeetingTask cog loaded.")
+        print(f"{self.__class__.__name__} cog loaded.")
 
         starts = []
         async for meeting_doc in self.meeting_coll.find({"status": "pending"}):
@@ -85,4 +85,4 @@ class MeetingTask(commands.Cog):
 
 
 async def setup(bot: MyBot):
-    await bot.add_cog(MeetingTask(bot))
+    await bot.add_cog(Task(bot))

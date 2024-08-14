@@ -10,7 +10,7 @@ class Admin(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print("Admin cog loaded.")
+        print(f"{self.__class__.__name__} cog loaded.")
 
     @commands.is_owner()
     @commands.command()

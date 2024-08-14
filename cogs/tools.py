@@ -26,7 +26,7 @@ class Tools(commands.Cog):
         embed_create_meeting.add_field(name="(remind_time_ago)", value="time before the meeting that the bot will remind the members to join the meeting", inline=False)
 
         self.embeds = [embed_title, embed_sever_settings, embed_create_meeting]
-        print("Tools cog loaded.")
+        print(f"{self.__class__.__name__} cog loaded.")
 
     @app_commands.command(name="help", description="check help")
     async def help(self, interaction: discord.Interaction):

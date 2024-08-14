@@ -6,7 +6,8 @@ from bot import MyBot
 class Activity(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
-        print("Activity cog loaded.")
+        print(f"{self.__class__.__name__} cog loaded.")
+        
         self.activity_task.start()
 
     def __init__(self, bot: MyBot):
