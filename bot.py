@@ -14,7 +14,7 @@ class MyBot(commands.Bot):
         self.mongo_client = motor.AsyncIOMotorClient(connection_string)
 
     async def on_ready(self):
-        print("Online.")
+        print(f"Logged in as {self.user}")
 
     async def setup_hook(self):
         from utils.meeting import Meeting_Buttons
