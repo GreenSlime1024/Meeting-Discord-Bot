@@ -31,7 +31,7 @@ class _Meeting(commands.GroupCog, name="meeting"):
             app_commands.Choice(name="1 hour ago", value=60),
         ]
     )
-    @app_commands.describe(title="title of the meeting", hour_local="hour that meeting will starts at (24-hour)", minute_local="minute that meeting will starts at (24-hour)", day_local="day that meeting will starts at (24-hour)", month_local="month that meeting will starts at (24-hour)", year_local="year that meeting will starts at (24-hour)", participate_role="members of the role that are asked to join the meeting", remind_time_ago="time before the meeting that the bot will remind the members to join the meeting")
+    @app_commands.describe(title="title of the meeting", hour="hour that meeting will starts at (use 24-hour clock)", minute="minute that meeting will starts at", day="day that meeting will starts at", month="month that meeting will starts at", year="year that meeting will starts at", participate_role="members who are asked to participate the meeting", remind_time_ago="when to remind the meeting")
     async def create(self, interaction: discord.Interaction, title: str, hour_local: int, minute_local: int, participate_role: Union[discord.Role, None]=None, remind_time_ago: Union[discord.app_commands.Choice[int], None]=None ,day_local: Union[int, None]=None, month_local: Union[int, None]=None, year_local: Union[int, None]=None):
         await interaction.response.defer()
 
