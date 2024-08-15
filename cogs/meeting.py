@@ -32,7 +32,7 @@ class _Meeting(commands.GroupCog, name="meeting"):
         ]
     )
     @app_commands.describe(title="title of the meeting", hour="hour that meeting will starts at (use 24-hour clock)", minute="minute that meeting will starts at", day="day that meeting will starts at", month="month that meeting will starts at", year="year that meeting will starts at", participate_role="members who are asked to participate the meeting", remind_time_ago="when to remind the meeting")
-    async def create(self, interaction: discord.Interaction, title: str, hour_local: int, minute_local: int, participate_role: Union[discord.Role, None]=None, remind_time_ago: Union[discord.app_commands.Choice[int], None]=None ,day_local: Union[int, None]=None, month_local: Union[int, None]=None, year_local: Union[int, None]=None):
+    async def create(self, interaction: discord.Interaction, title: str, hour: int, minute: int, participate_role: Union[discord.Role, None]=None, remind_time_ago: Union[discord.app_commands.Choice[int], None]=None ,day: Union[int, None]=None, month: Union[int, None]=None, year: Union[int, None]=None):
         await interaction.response.defer()
 
         server_setting_doc = await self.server_setting_coll.find_one({"guild_id": interaction.guild.id})
@@ -45,19 +45,18 @@ class _Meeting(commands.GroupCog, name="meeting"):
         if interaction.user not in meeting_admin_role.members:
             raise Exception("You need to have the meeting admin role to create a meeting.")
         
-        now_time_UTC = datetime.datetime.now(datetime.timezone.utc).replace(second=0, microsecond=0)
-        now_time_local = now_time_UTC.astimezone(pytz.timezone(timezone))
-        day_local = day_local or now_time_local.day
-        month_local = month_local or now_time_local.month
-        year_local = year_local or now_time_local.year
+        now_time_local = datetime.datetime.now(pytz.timezone(timezone))
+        day = day or now_time_local.day
+        month = month or now_time_local.month
+        year = year or now_time_local.year
         
         try:
-            meeting_time_local = pytz.timezone(timezone).localize(datetime.datetime(year_local, month_local, day_local, hour_local, minute_local))
+            meeting_time_local = datetime.datetime(year, month, day, hour, minute, tzinfo=pytz.timezone(timezone))
         except ValueError:
             raise Exception("Please type the correct time.")
         
         meeting_time_UTC = meeting_time_local.astimezone(pytz.utc)
-        now_time_UTC = datetime.datetime.now(datetime.timezone.utc).replace(second=0, microsecond=0)
+        now_time_UTC = datetime.datetime.now(pytz.utc).replace(second=0, microsecond=0)
         if meeting_time_UTC <= now_time_UTC:
             raise Exception("Please type the correct time.")
         
