@@ -11,7 +11,7 @@ class Activity(commands.Cog):
 
     def __init__(self, bot: MyBot):
         self.bot = bot
-        self.activitys = ["running on eri24816's bad server", "made by greenslime1024", "/create_meeting", "/set_server_settings"]
+        self.activitys = ["running on greenslime1024's good pi", "made by greenslime1024", "/create_meeting", "/set_server_settings"]
         self.index = 0
 
     @tasks.loop(seconds=15)
