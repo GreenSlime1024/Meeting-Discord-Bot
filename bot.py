@@ -3,11 +3,12 @@ import json
 import os
 from discord.ext import commands
 import motor.motor_asyncio as motor
+from utils.mentionable_tree import MentionableTree
 
 
 class MyBot(commands.Bot):
     def __init__(self):
-        super().__init__(command_prefix="plz ", intents=discord.Intents.all(), owner_ids=set([1022080471506624545, 364976571192311808]))
+        super().__init__(command_prefix="plz ", intents=discord.Intents.all(), owner_ids=set([1022080471506624545, 364976571192311808]), tree_cls=MentionableTree)
         with open("not_token.json", mode="r", encoding="utf8") as jfile:
             jdata = json.load(jfile)
         connection_string = jdata["connection_string"]
