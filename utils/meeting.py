@@ -10,7 +10,7 @@ class Meeting():
     def __init__(self, bot: MyBot, _id:ObjectId):
         self.bot = bot
         self._id = _id
-        self.server_setting_coll = self.bot.mongo_client["meeting"]["server_setting"]
+        self.server_setting_coll = self.bot.mongo_client["meeting"]["settings"]
         self.meeting_coll = self.bot.mongo_client["meeting"]["meeting"]
 
     async def create(self, guild_id:int, title:str, start_timestamp:int, participate_role_id:int, remind_timestamp:Union[int, None]=None):

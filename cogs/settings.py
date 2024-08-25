@@ -6,7 +6,7 @@ from bot import MyBot
 class SettingsCog(commands.GroupCog, name="settings"):
     def __init__(self, bot: MyBot):
         self.bot = bot
-        self.server_setting_coll = self.bot.mongo_client["meeting"]["server_setting"]
+        self.server_setting_coll = self.bot.mongo_client["meeting"]["settings"]
 
     timezone=[
         app_commands.Choice(name="UTC", value="UTC"),

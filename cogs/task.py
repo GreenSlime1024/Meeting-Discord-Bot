@@ -10,7 +10,7 @@ import datetime
 class TaskCog(commands.Cog):
     def __init__(self, bot: MyBot):
         self.bot = bot
-        self.server_setting_coll = self.bot.mongo_client["meeting"]["server_setting"]
+        self.server_setting_coll = self.bot.mongo_client["meeting"]["settings"]
         self.meeting_coll = self.bot.mongo_client["meeting"]["meeting"]
         
     @commands.Cog.listener()
