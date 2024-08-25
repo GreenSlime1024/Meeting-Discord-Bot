@@ -4,12 +4,14 @@ from discord import app_commands
 from bot import MyBot
 
 
-class Tools(commands.Cog):
+class ToolsCog(commands.Cog):
     def __init__(self, bot: MyBot):
         self.bot = bot
         
     @commands.Cog.listener()
     async def on_ready(self):
+        print(f"{self.__class__.__name__} loaded.")
+        
         embed_title = discord.Embed(title="How to create a meeting?", color=discord.Color.blue())
 
         embed_sever_settings = discord.Embed(title="1. Set Server Settings", description="</set_server_settings:1121308554448617602>", color=discord.Color.blue())
@@ -26,7 +28,6 @@ class Tools(commands.Cog):
         embed_create_meeting.add_field(name="(remind_time_ago)", value="time before the meeting that the bot will remind the members to join the meeting", inline=False)
 
         self.embeds = [embed_title, embed_sever_settings, embed_create_meeting]
-        print(f"{self.__class__.__name__} cog loaded.")
 
     @app_commands.command(name="help", description="check help")
     async def help(self, interaction: discord.Interaction):
@@ -45,4 +46,4 @@ class Tools(commands.Cog):
 
 
 async def setup(bot: MyBot):
-    await bot.add_cog(Tools(bot))
+    await bot.add_cog(ToolsCog(bot))

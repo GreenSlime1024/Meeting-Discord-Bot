@@ -3,7 +3,7 @@ from discord.ext import commands, tasks
 from bot import MyBot
 
 
-class Activity(commands.Cog):
+class ActivityCog(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print(f"{self.__class__.__name__} cog loaded.")
@@ -24,4 +24,4 @@ class Activity(commands.Cog):
 
 
 async def setup(bot: MyBot):
-    await bot.add_cog(Activity(bot))
+    await bot.add_cog(ActivityCog(bot))

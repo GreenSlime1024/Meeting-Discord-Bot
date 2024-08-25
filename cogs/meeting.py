@@ -9,7 +9,7 @@ from bson import ObjectId
 from typing import Union
 
 
-class _Meeting(commands.GroupCog, name="meeting"):
+class MeetingCog(commands.GroupCog, name="meeting"):
     def __init__(self, bot: MyBot):
         self.bot = bot
         self.server_setting_coll = self.bot.mongo_client["meeting"]["server_setting"]
@@ -17,7 +17,7 @@ class _Meeting(commands.GroupCog, name="meeting"):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(f"{self.__class__.__name__} cog loaded.")
+        print(f"{self.__class__.__name__} loaded.")
         
     # discord create meeting command
     @app_commands.command(name="create", description="create a meeting")
@@ -79,4 +79,4 @@ class _Meeting(commands.GroupCog, name="meeting"):
     
 
 async def setup(bot: MyBot):
-    await bot.add_cog(_Meeting(bot))
+    await bot.add_cog(MeetingCog(bot))

@@ -3,7 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 from bot import MyBot
 
-class Settings(commands.GroupCog, name="settings"):
+class SettingsCog(commands.GroupCog, name="settings"):
     def __init__(self, bot: MyBot):
         self.bot = bot
         self.server_setting_coll = self.bot.mongo_client["meeting"]["server_setting"]
@@ -35,11 +35,10 @@ class Settings(commands.GroupCog, name="settings"):
         app_commands.Choice(name="GMT-11", value="Etc/GMT+11"),
         app_commands.Choice(name="GMT-12", value="Etc/GMT+12"),
     ]
-    
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(f"{self.__class__.__name__} cog loaded.")
+        print(f"{self.__class__.__name__} loaded.")
 
     async def _init(self, interaction: discord.Interaction, timezone: discord.app_commands.Choice[str], meeting_admin_role: discord.Role):
         meeting_category = await interaction.guild.create_category("Meeting")
@@ -164,4 +163,4 @@ Finished :white_check_mark:
         
 
 async def setup(bot: MyBot):
-    await bot.add_cog(Settings(bot))
+    await bot.add_cog(SettingsCog(bot))

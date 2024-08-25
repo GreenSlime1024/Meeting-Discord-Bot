@@ -4,13 +4,13 @@ from discord import app_commands
 from bot import MyBot
 
 
-class Admin(commands.Cog):
+class AdminCog(commands.Cog):
     def __init__(self, bot: MyBot):
         self.bot = bot
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(f"{self.__class__.__name__} cog loaded.")
+        print(f"{self.__class__.__name__} loaded.")
 
     @commands.is_owner()
     @commands.command()
@@ -44,4 +44,4 @@ class Admin(commands.Cog):
 
 
 async def setup(bot: MyBot):
-    await bot.add_cog(Admin(bot))
+    await bot.add_cog(AdminCog(bot))
