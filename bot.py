@@ -4,15 +4,19 @@ import os
 from discord.ext import commands
 import motor.motor_asyncio as motor
 from utils.mentionable_tree import MentionableTree
+from pygit2 import Repository
 
+with open("not_token.json", mode="r", encoding="utf8") as jfile:
+    jdata = json.load(jfile)
+
+branch = Repository('.').head.shorthand
+CONNECTION_STRING = jdata["CONNECTION_STRING_"+branch]
+TOKEN = jdata["TOKEN_"+branch]
 
 class MyBot(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix="plz ", intents=discord.Intents.all(), owner_ids=set([1022080471506624545, 364976571192311808]), tree_cls=MentionableTree)
-        with open("not_token.json", mode="r", encoding="utf8") as jfile:
-            jdata = json.load(jfile)
-        connection_string = jdata["connection_string"]
-        self.mongo_client = motor.AsyncIOMotorClient(connection_string)
+        self.mongo_client = motor.AsyncIOMotorClient(CONNECTION_STRING)
 
     async def on_ready(self):
         print(f"Logged in as {self.user}")
@@ -39,4 +43,4 @@ if __name__ == "__main__":
         else:
             await interaction.response.send_message(embed=embed)
 
-    bot.run(jdata["discord_token"])
+    bot.run(TOKEN)
