@@ -2,11 +2,13 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from bot import MyBot
+from utils.utils import interaction_check
 
 class SettingsCog(commands.GroupCog, name="settings"):
     def __init__(self, bot: MyBot):
         self.bot = bot
         self.server_setting_coll = self.bot.mongo_client["meeting"]["settings"]
+        self.interaction_check = interaction_check
 
     timezone=[
         app_commands.Choice(name="UTC", value="UTC"),

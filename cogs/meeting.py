@@ -7,6 +7,7 @@ from utils.meeting import Meeting
 from bot import MyBot
 from bson import ObjectId
 from typing import Union
+from utils.utils import interaction_check
 
 
 class MeetingCog(commands.GroupCog, name="meeting"):
@@ -14,6 +15,7 @@ class MeetingCog(commands.GroupCog, name="meeting"):
         self.bot = bot
         self.server_setting_coll = self.bot.mongo_client["meeting"]["settings"]
         self.meeting_coll = self.bot.mongo_client["meeting"]["meeting"]
+        self.interaction_check = interaction_check
 
     @commands.Cog.listener()
     async def on_ready(self):
