@@ -37,11 +37,11 @@ class ToolsCog(commands.Cog):
 
     @app_commands.command(name="help", description="check help")
     async def help(self, interaction: discord.Interaction):
-        await interaction.response.send_message(embeds=self.embeds)
+        await interaction.response.send_message(embeds=self.embeds, ephemeral=True)
         
     @app_commands.command(name="ping", description="check ping")
     async def ping(self, interaction: discord.Interaction):
-        await interaction.response.send_message(f"pong ({round(self.bot.latency*1000)}ms)")
+        await interaction.response.send_message(f"pong ({round(self.bot.latency*1000)}ms)", ephemeral=True)
 
     @app_commands.command(name="about", description="check this bot's info")
     async def about(self, interaction: discord.Interaction):
@@ -49,7 +49,7 @@ class ToolsCog(commands.Cog):
         embed.add_field(name="Author", value="GreenSlime1024", inline=False)
         embed.add_field(name="Github Repo", value="https://github.com/GreenSlime1024/Meeting-Discord-Bot", inline=False)
         embed.add_field(name="Support Server", value="https://discord.gg/4yGdjTdsYq", inline=False)
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 async def setup(bot: MyBot):

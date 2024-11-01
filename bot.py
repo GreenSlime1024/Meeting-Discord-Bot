@@ -42,9 +42,9 @@ if __name__ == "__main__":
         embed.add_field(name="Need help?", value="Join the [support server](https://discord.gg/4yGdjTdsYq)")
 
         if interaction.response.is_done():
-            await interaction.followup.send(embed=embed)
+            await interaction.followup.send(embed=embed, ephemeral=True)
         else:
-            await interaction.response.send_message(embed=embed)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
     
     bot.tree.on_error = on_app_command_error
 
