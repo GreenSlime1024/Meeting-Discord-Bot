@@ -48,6 +48,7 @@ class ToolsCog(commands.Cog):
         embed = discord.Embed(title="About This Bot", color=discord.Color.blue())
         embed.add_field(name="Author", value="GreenSlime1024", inline=False)
         embed.add_field(name="Github Repo", value="https://github.com/GreenSlime1024/Meeting-Discord-Bot", inline=False)
+        embed.add_field(name="Support Server", value="https://discord.gg/4yGdjTdsYq", inline=False)
         await interaction.response.send_message(embed=embed)
 
 

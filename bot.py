@@ -33,14 +33,19 @@ if __name__ == "__main__":
     with open("not_token.json", mode="r", encoding="utf8") as jfile:
         jdata = json.load(jfile)
 
-    tree = bot.tree
-    @tree.error
     async def on_app_command_error(interaction:discord.Interaction, error:discord.app_commands.AppCommandError):
-        embed = discord.Embed(title="Error", color=discord.Color.red())
-        embed.description = f"```{error}```"
+        embed = discord.Embed(
+            title="❌ Error",
+            description=f"```{error}```",
+            color=discord.Color.red()
+        )
+        embed.add_field(name="Need help?", value="Join the [support server](https://discord.gg/4yGdjTdsYq)")
+
         if interaction.response.is_done():
             await interaction.followup.send(embed=embed)
         else:
             await interaction.response.send_message(embed=embed)
+    
+    bot.tree.on_error = on_app_command_error
 
     bot.run(TOKEN)
